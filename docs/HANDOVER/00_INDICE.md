@@ -23,7 +23,7 @@ un emprendedor a convertir una idea de negocio en un plan estructurado.
 ## Resumen en 30 segundos
 
 - **Monorepo pnpm** con tres paquetes: `packages/core` (dominio puro),
-  `apps/api` (Hono + Postgres + Better Auth + IA), `apps/web` (Next.js 16).
+  `apps/api` (Hono + Postgres + Better Auth + IA), `Frontend` (Next.js 16).
 - El usuario **conversa** con un coach. El coach pregunta de a una cosa, en
   lenguaje simple, y va armando el plan.
 - La IA **propone** estructura; **nada entra al plan sin que el usuario lo

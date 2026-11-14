@@ -17,7 +17,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
-      "@bid/core": path.resolve(import.meta.dirname, "../../packages/core/src/index.ts"),
+      "@bid/core": path.resolve(import.meta.dirname, "../packages/core/src/index.ts"),
     },
   },
   test: {

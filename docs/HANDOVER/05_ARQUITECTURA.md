@@ -4,7 +4,7 @@
 
 ```text
 ┌─────────────────────┐        HTTP + cookie httpOnly        ┌─────────────────────┐
-│   apps/web          │ ───────────────────────────────────▶ │   apps/api          │
+│   Frontend          │ ───────────────────────────────────▶ │   apps/api          │
 │   Next.js 16        │ ◀─────────────────────────────────── │   Hono              │
 │   (solo cliente)    │        JSON · text/plain stream      │                     │
 └─────────┬───────────┘                                      └──────────┬──────────┘
@@ -26,7 +26,7 @@ comparte `@bid/core`.
 |---|---|---|
 | `packages/core` | Modelo canónico, merge, proyecciones puras | nada |
 | `apps/api` | Casos de uso, persistencia, auth, IA, HTTP | `@bid/core` |
-| `apps/web` | UI, cliente HTTP, proyecciones de vista | `@bid/core` |
+| `Frontend` | UI, cliente HTTP, proyecciones de vista | `@bid/core` |
 
 `pnpm-workspace.yaml` define los paquetes; la raíz solo orquesta scripts.
 
@@ -229,7 +229,7 @@ Sin dependencias de runtime: se ejecuta igual en API, cliente y tests.
 ### Estructura
 
 ```text
-apps/web/src/
+Frontend/src/
 ├── app/
 │   ├── (auth)/            sign-in, sign-up, forgot-password, reset-password
 │   ├── (app)/

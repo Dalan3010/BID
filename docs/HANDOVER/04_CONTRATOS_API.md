@@ -384,7 +384,7 @@ sembrado.
 
 ---
 
-## 7. Cliente HTTP (`apps/web/src/lib/api.ts`)
+## 7. Cliente HTTP (`Frontend/src/lib/api.ts`)
 
 El cliente comparte **solo** los tipos de `@bid/core`; nunca importa de
 `apps/api`.

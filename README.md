@@ -29,7 +29,7 @@ El repositorio es un **workspace pnpm** con dos paquetes:
 
 ```
 packages/core/   Dominio puro: modelo canónico, merge y proyecciones
-apps/web/        Next.js. Solo cliente: no toca la base ni importa la API
+Frontend/        Next.js. Solo cliente: no toca la base ni importa la API
 ```
 
 El cliente y la API se comunican **por HTTP**, y comparten únicamente los tipos y
@@ -59,7 +59,7 @@ pnpm dev                  # cliente en http://localhost:3000
 El cliente necesita una API escuchando en `NEXT_PUBLIC_API_URL` (por defecto
 `http://localhost:3001`).
 
-Hay **un solo `.env.local`**, en la raíz: `apps/web/next.config.ts` lo carga con
+Hay **un solo `.env.local`**, en la raíz: `Frontend/next.config.ts` lo carga con
 `loadEnvConfig`, así que `NEXT_PUBLIC_API_URL` se declara una vez.
 
 | Script | Qué hace |
@@ -67,7 +67,7 @@ Hay **un solo `.env.local`**, en la raíz: `apps/web/next.config.ts` lo carga co
 | `pnpm dev` | Levanta el cliente |
 | `pnpm build` | Build de producción del cliente |
 | `pnpm start` | Sirve el build del cliente |
-| `pnpm lint` | ESLint (solo `apps/web`) |
+| `pnpm lint` | ESLint (solo `Frontend`) |
 | `pnpm typecheck` | TypeScript sin emitir, en los dos paquetes |
 | `pnpm test` | Tests una vez |
 
@@ -87,13 +87,13 @@ packages/core/src/
 ├── idea/               Modelo canónico, merge y proyecciones (puro)
 └── chat/               Tipos de la conversación
 
-apps/web/src/
+Frontend/src/
 ├── app/                Rutas: portada, (auth), (app)
 ├── components/         ui, motion (Anime.js), navegación y una carpeta por pantalla
 └── lib/                Cliente HTTP, stream, sesión, dimensiones (sin JSX, testeado)
 ```
 
-El cliente está documentado en [`apps/web/README.md`](apps/web/README.md):
+El cliente está documentado en [`Frontend/README.md`](Frontend/README.md):
 arquitectura e integración con cada endpoint, sistema de diseño, catálogo de
 animaciones y limitaciones del backend encontradas al integrarlo.
 
@@ -111,7 +111,7 @@ animaciones y limitaciones del backend encontradas al integrarlo.
   decisiones y descubrimientos exportado desde Engram.
 - [`docs/engram/`](docs/engram/README.md) — export nativo para importar la
   memoria del proyecto en otro entorno.
-- [`apps/web/README.md`](apps/web/README.md) — el cliente "BID Creative
+- [`Frontend/README.md`](Frontend/README.md) — el cliente "BID Creative
   Studio": rutas, estructura, diseño, movimiento y verificación.
 
 ## Las dos vistas

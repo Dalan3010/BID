@@ -34,7 +34,7 @@ Leyenda: ✅ completada · 🟡 en curso · ⬜ pendiente · ⛔ bloqueada
 
 > **Nota de topología.** El repositorio es un monorepo pnpm con tres paquetes:
 > `packages/core` (dominio puro), `apps/api` (Hono, único que toca Postgres y
-> Better Auth) y `apps/web` (Next.js, solo cliente). El cliente habla con la API
+> Better Auth) y `Frontend` (Next.js, solo cliente). El cliente habla con la API
 > por HTTP. No es una fase nueva: es el mismo producto de las fases 0–5, con el
 > transporte separado. El detalle está en
 > [`arquitectura.md`](./arquitectura.md).
@@ -48,7 +48,7 @@ construir encima.
 
 **Entregable:** scaffold de Next.js, modelo canónico, proyecciones puras,
 documentación completa. Hoy ese modelo vive en `packages/core` y el scaffold en
-`apps/web`.
+`Frontend`.
 
 **Cubierto:** D1–D6, RF-30 (parcial), RF-31 (parcial), RF-40 (parcial).
 

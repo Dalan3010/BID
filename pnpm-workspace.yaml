@@ -1,9 +1,9 @@
 # pnpm settings (pnpm 10+ reads configuration from this file, not package.json).
 #
 # The repository is a workspace: `packages/core` is the pure domain and
-# `apps/web` is the client.
+# `Frontend` is the client.
 packages:
-  - "apps/*"
+  - "Frontend"
   - "packages/*"
 
 # esbuild ships a native binary and needs its install script to place it.

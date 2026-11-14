@@ -1,6 +1,6 @@
 # Arquitectura del cliente
 
-Cómo está construido `apps/web`, cómo habla con la API y qué límites del
+Cómo está construido `Frontend`, cómo habla con la API y qué límites del
 backend condicionan la interfaz.
 
 La fuente de verdad de los contratos es

@@ -1,6 +1,6 @@
 # Diario de cambios del cliente
 
-Registro de cada cambio de `apps/web`, del más reciente al más antiguo. Cada
+Registro de cada cambio de `Frontend`, del más reciente al más antiguo. Cada
 entrada dice **qué** cambió, **por qué**, **qué archivos** toca y **cómo se
 verificó**.
 
@@ -9,7 +9,7 @@ verificó**.
 ## 2026-11-07 — Once mejoras más, todas de frontend
 
 Ningún endpoint nuevo ni cambio en `apps/api`. Dos de ellas añaden
-**dependencias de desarrollo** a `apps/web` (tests), sin efecto en producción.
+**dependencias de desarrollo** a `Frontend` (tests), sin efecto en producción.
 
 ### 1. Atajos de teclado
 
@@ -184,7 +184,7 @@ estilos no aparece en desarrollo, reinicia el servidor.
 | `src/components/workspace/plan-panel.tsx`, `dimension-entry.tsx` | Imprimir, línea de tiempo, clases de impresión |
 | `src/components/dashboard/studio-view.tsx`, `idea-filters.tsx` | Atajos `/` y `N` |
 | `src/components/navigation/app-shell.tsx`, `app-header.tsx` | Ayuda de atajos; cabecera oculta al imprimir |
-| `.gitignore` (raíz) | Ignora `apps/web/test-results/` y `playwright-report/` |
+| `.gitignore` (raíz) | Ignora `Frontend/test-results/` y `playwright-report/` |
 
 ### Verificación
 
@@ -429,7 +429,7 @@ tema vuelve a rellenar.
 
 ## 2026-11-07 — Construcción inicial del cliente "BID Creative Studio"
 
-Creación de `apps/web` desde cero (la carpeta no existía), conectado a la API
+Creación de `Frontend` desde cero (la carpeta no existía), conectado a la API
 existente sin cambiar contratos ni tocar `apps/api`, `packages/core` ni las
 migraciones.
 

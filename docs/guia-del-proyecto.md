@@ -30,7 +30,7 @@ nodos. Falta el historial de versiones y el modo demo.
 
 | Elemento | Dónde |
 |---|---|
-| Monorepo pnpm: dominio, API y cliente | `packages/core/`, `apps/api/`, `apps/web/` |
+| Monorepo pnpm: dominio, API y cliente | `packages/core/`, `apps/api/`, `Frontend/` |
 | Modelo canónico de una idea (10 dimensiones) | `packages/core/src/idea/types.ts` |
 | Proyecciones puras: huecos, completitud, árbol | `packages/core/src/idea/projections/` |
 | Regla de merge `edited > confirmed > inferred` | `packages/core/src/idea/merge.ts` |
@@ -39,19 +39,19 @@ nodos. Falta el historial de versiones y el modo demo.
 | Repositorio Drizzle + puerto | `apps/api/src/infrastructure/db/idea-repository.ts` |
 | Casos de uso (crear, cargar, proponer, confirmar, editar, agenda, dueño) | `apps/api/src/application/use-cases/` |
 | Autenticación con Better Auth sobre la tabla `users` | `apps/api/src/infrastructure/auth/` |
-| Cliente HTTP tipado y sesión | `apps/web/src/lib/api.ts`, `apps/web/src/lib/auth-client.ts`, `use-session.ts` |
-| Entrar, crear cuenta, recuperar contraseña | `apps/web/src/app/(auth)/` |
-| Dashboard, perfil, exportación y borrado de cuenta | `apps/web/src/app/(app)/` |
+| Cliente HTTP tipado y sesión | `Frontend/src/lib/api.ts`, `Frontend/src/lib/auth-client.ts`, `use-session.ts` |
+| Entrar, crear cuenta, recuperar contraseña | `Frontend/src/app/(auth)/` |
+| Dashboard, perfil, exportación y borrado de cuenta | `Frontend/src/app/(app)/` |
 | Seed de la idea demo (10 dimensiones, 0 huecos) | `apps/api/src/infrastructure/db/seed.ts` |
-| Vista árbol (React Flow) derivada de `buildTree` | `apps/web/src/app/(app)/ideas/[id]/idea-tree/` |
-| Vista card con el estado de las diez dimensiones | `apps/web/src/app/(app)/ideas/[id]/idea-card.tsx` |
+| Vista árbol (React Flow) derivada de `buildTree` | `Frontend/src/app/(app)/ideas/[id]/idea-tree/` |
+| Vista card con el estado de las diez dimensiones | `Frontend/src/app/(app)/ideas/[id]/idea-card.tsx` |
 | Layout del árbol como proyección pura y testeable | `packages/core/src/idea/projections/layout.ts` |
-| Chat con streaming e historial por idea | `apps/web/src/app/(app)/ideas/[id]/chat/`, `apps/api/src/routes/messages.ts` |
+| Chat con streaming e historial por idea | `Frontend/src/app/(app)/ideas/[id]/chat/`, `apps/api/src/routes/messages.ts` |
 | Puerto `CoachModel` con guion y con proveedor | `apps/api/src/application/ports/coach-model.ts`, `apps/api/src/infrastructure/ai/` |
 | Puerto `Extractor` + esquema Zod de la propuesta | `apps/api/src/application/ports/extractor.ts`, `apps/api/src/infrastructure/ai/extraction-schema.ts` |
 | Extracción con guion (patrones) y con proveedor | `apps/api/src/infrastructure/ai/rehearsal-extractor.ts`, `provider-extractor.ts` |
 | Casos de uso de extracción y resolución de propuestas | `apps/api/src/application/use-cases/extract-knowledge.ts`, `resolve-proposal.ts` |
-| Panel de propuestas (confirmar / corregir / descartar) | `apps/web/src/app/(app)/ideas/[id]/chat/proposal-panel.tsx` |
+| Panel de propuestas (confirmar / corregir / descartar) | `Frontend/src/app/(app)/ideas/[id]/chat/proposal-panel.tsx` |
 | Cuota de extracciones con aviso | `apps/api/src/infrastructure/ai/in-memory-usage-quota.ts` |
 | 84 tests (28 del core, 56 de la API) | `*.test.ts` |
 | Especificación funcional completa | `docs/especificacion-funcional.md` |
@@ -105,7 +105,7 @@ cliente, vas a ver errores de red: la API tiene que estar arriba.
 
 Hay **un solo `.env.local`**, en la raíz, compartido por los dos. La API lo carga
 con `tsx --env-file-if-exists` y el cliente con `loadEnvConfig` desde
-`apps/web/next.config.ts`, así que cada valor se declara una vez.
+`Frontend/next.config.ts`, así que cada valor se declara una vez.
 
 > **No uses `npm install` en este repositorio.** El lockfile es
 > `pnpm-lock.yaml`. npm lo ignora, genera un árbol de dependencias distinto y
@@ -134,7 +134,7 @@ salteá el `docker compose`.
 | `pnpm dev` | Levanta la API y el cliente en paralelo, con recarga |
 | `pnpm build` | Build de producción del cliente |
 | `pnpm start` | Sirve el build del cliente |
-| `pnpm lint` | ESLint (solo `apps/web`) |
+| `pnpm lint` | ESLint (solo `Frontend`) |
 | `pnpm typecheck` | TypeScript sin emitir, en los tres paquetes |
 | `pnpm test` | Tests una vez (no necesita base de datos) |
 | `pnpm test:watch` | Tests de la API en modo watch |
@@ -185,7 +185,7 @@ bid/
 │           ├── db/           Esquema, cliente, repositorios, migración y seed
 │           ├── ai/           Coach y extractor: guion y proveedor
 │           └── container.ts  Composition root: qué implementación se usa
-└── apps/web/
+└── Frontend/
     ├── next.config.ts        Configuración de Next (carga el .env de la raíz)
     ├── eslint.config.mjs     Reglas de lint
     └── src/
@@ -204,14 +204,14 @@ bid/
 ### Dos aplicaciones y el dominio compartido
 
 ```
-apps/web (Next.js) ──HTTP──▶ apps/api (Hono)
+Frontend (Next.js) ──HTTP──▶ apps/api (Hono)
         │                          │
         └──────────┬───────────────┘
                    ▼
         packages/core (dominio puro)
 ```
 
-El cliente y la API son procesos separados. `apps/web` no importa nada de
+El cliente y la API son procesos separados. `Frontend` no importa nada de
 `apps/api` ni toca la base: habla por HTTP y comparte solo los tipos y las
 proyecciones puras de `@bid/core`.
 
@@ -330,7 +330,7 @@ El detalle y el razonamiento completo están en
 pnpm typecheck    # los tres paquetes, sin salida = correcto
 pnpm test         # 28 del core + 56 de la API = 84 passed
 pnpm build        # compila el cliente y genera las rutas
-pnpm lint         # ESLint sobre apps/web
+pnpm lint         # ESLint sobre Frontend
 ```
 
 Con la base levantada, además:
@@ -409,7 +409,7 @@ entrega, no un bug menor.
 
 - **TypeScript estricto.** Sin `any` en el dominio.
 - **Dominio puro.** Si un archivo en `packages/core` importa algo externo, es
-  un error de arquitectura. Si `apps/web` importa algo de `apps/api`, también.
+  un error de arquitectura. Si `Frontend` importa algo de `apps/api`, también.
 - **Idioma:** identificadores y comentarios de código en inglés; documentación
   en español.
 - **Tests junto al código** (`*.test.ts`), no en un árbol paralelo.
@@ -429,7 +429,7 @@ entrega, no un bug menor.
 - Las variables de entorno viven en **un solo `.env.local` en la raíz**
   (ignorado). La plantilla es `.env.example`. La API lo lee con
   `tsx --env-file-if-exists` y el cliente con `loadEnvConfig` desde
-  `apps/web/next.config.ts`.
+  `Frontend/next.config.ts`.
 - **No hay proveedor de correo.** Los enlaces de recuperación de contraseña y de
   verificación de email se escriben en el log del servidor. El flujo está
   completo y probado; falta el transporte. Agregar Resend o SMTP es cambiar
@@ -452,7 +452,7 @@ entrega, no un bug menor.
   sesión, que observan el store de Better Auth. Los formularios no navegan: si
   lo hicieran, podrían llegar al área protegida antes de que el store vea la
   sesión nueva.
-- El lint cubre solo `apps/web`; la API y el core se validan con `tsc --noEmit`
+- El lint cubre solo `Frontend`; la API y el core se validan con `tsc --noEmit`
   en modo estricto.
 - `publicHoistPattern: [next]` en `pnpm-workspace.yaml` existe para que
   `eslint-config-next` encuentre `next/dist/compiled/babel/eslint-parser` desde
