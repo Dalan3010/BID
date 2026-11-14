@@ -1,0 +1,17 @@
+# pnpm settings (pnpm 10+ reads configuration from this file, not package.json).
+#
+# The repository is a workspace: `packages/core` is the pure domain and
+# `apps/web` is the client.
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# esbuild ships a native binary and needs its install script to place it.
+allowBuilds:
+  esbuild: true
+
+# `eslint-config-next` requires `next/dist/compiled/babel/eslint-parser` from its
+# own package directory. pnpm keeps `next` inside the client's node_modules, out
+# of that lookup path, so it is hoisted to the root to make ESLint resolve it.
+publicHoistPattern:
+  - next

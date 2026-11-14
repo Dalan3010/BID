@@ -140,6 +140,100 @@ Usuario escribe
 3. La detección de huecos es determinística (comparación de tipos de nodo contra el modelo canónico), no una llamada al modelo.
 4. Toda salida del modelo pasa por validación de esquema. JSON inválido se descarta y se reintenta una sola vez.
 
+### D7 — Persistencia del grafo: relacional para el presente, `jsonb` para el pasado
+
+El grafo se guarda de dos formas a la vez, cada una para un problema distinto:
+
+| Qué | Cómo | Por qué |
+|---|---|---|
+| Estado actual de la idea | Tabla `nodes`, una fila por nodo | La regla de merge es **por nodo**: aplicarla es un `UPDATE` condicionado, no una reescritura del documento entero |
+| Historial de versiones | `idea_versions.graph` como `jsonb` | Un snapshot es inmutable por definición: se lee entero o no se lee |
+
+Guardar el estado actual como `jsonb` habría obligado a leer, modificar y
+reescribir el documento completo en cada edición, con el riesgo de que dos
+ediciones concurrentes se pisen. La regla `edited > confirmed > inferred` habría
+dejado de ser atómica.
+
+Las tablas son `users`, `ideas`, `nodes`, `messages` e `idea_versions`.
+`messages` entra en el esquema aunque el chat llegue en la Fase 4, porque
+`nodes.message_id` es la trazabilidad de D4: sin la tabla, esa columna no
+apuntaría a nada.
+
+Los tipos de nodo y las fuentes son **enums de Postgres**, generados desde
+`NODE_TYPES` y `NodeSource`. La base rechaza un valor que el dominio no conozca.
+
+### D8 — Autenticación: una sola tabla de identidad
+
+Better Auth trae su propia tabla `user`. El proyecto **no la usa**: la tabla
+`users` del dominio es el modelo `user` de la librería
+(`user.modelName: "users"`).
+
+| Opción | Consecuencia |
+|---|---|
+| Tabla `users` propia (la de Better Auth) | Habría que sincronizarla con la tabla del dominio, y "de quién es esta idea" se resolvería en dos lugares |
+| `users` del dominio como modelo `user` | Una sola fuente de identidad; `ideas.owner_id` sigue apuntando al mismo lugar |
+
+La segunda opción es la elegida. Consecuencia práctica: `users.id` es `text`,
+no `uuid` como el resto de las tablas, porque es lo que Better Auth genera.
+
+**Decisiones de la Fase 2:**
+
+- **Solo email y contraseña.** Sin OAuth: cada proveedor es una cuenta más que
+  hay que mantener y configurar para la evaluación.
+- **Sin proveedor de correo.** Los enlaces de recuperación de contraseña y de
+  verificación de email se escriben en el log del servidor. El flujo completo
+  —token de un solo uso, expiración, cambio de contraseña— está implementado y
+  probado; lo que falta es el transporte, que son dos callbacks.
+- **`requireEmailVerification` desactivado.** Sin correo no se puede verificar, y
+  una demo que exige verificar un email no se puede hacer.
+- **Aislamiento por dueño con 404, no 403.** Un `403` confirmaría que la idea
+  existe y es de otra persona. Para un desconocido, una idea ajena y una idea
+  inexistente se ven igual.
+- **La contraseña de la cuenta demo se restaura en cada seed.** La demo tiene
+  que poder entrar siempre; una demo sin acceso no sirve.
+
+
+### D9 — La IA detrás de un puerto, con guion por defecto
+
+La capa de IA se habla con un puerto (`CoachModel`) que devuelve un flujo de
+texto. Hay dos implementaciones detrás:
+
+| Implementación | Cuándo |
+|---|---|
+| Guion (rehearsal) | Por defecto. La app funciona sin API key y sin red |
+| Proveedor (AI SDK) | Con `COACH_PROVIDER=live` |
+
+**Por qué el guion es el default y no un "mock de desarrollo":**
+
+| Opción | Consecuencia |
+|---|---|
+| Esperar al proveedor para escribir el chat | La Fase 4 se bloquea y no hay demo hasta que haya una key |
+| Guion como default | El chat, el streaming, la persistencia y la UI se construyen y se prueban **hoy** |
+
+El guion no devuelve respuestas vacías: pregunta por la dimensión que el
+dominio decidió que falta, con una pregunta escrita a mano. La demo muestra
+el producto real, con una fuente de verdad determinista.
+
+**Consecuencia:** cuando se elija el proveedor, es **una clase más** que
+implementa la interfaz. `application/` y `app/` no cambian, y el chat ya está
+probado.
+
+**El proveedor no es una dependencia dura** y eso también cumple RNF-15 (la app
+es demostrable sin conexión al proveedor), RNF-16 (latencia de la demo) y
+RNF-17 (free tiers, sin tarjeta asociada).
+
+### D10 — El mensaje del usuario se guarda antes de llamar al modelo
+
+El orden en un turno de conversación es: guardar el mensaje del usuario →
+calcular la agenda → llamar al modelo → guardar la respuesta.
+
+Si el proveedor falla, el mensaje del usuario **ya está en la base**. Por eso
+el usuario puede reintentar sin perder la conversación (RF-25), y por eso el
+error es un `502` con un mensaje claro en vez de un error genérico.
+
+La alternativa —guardar el mensaje solo si la respuesta llegó— perdería el
+turno del usuario cada vez que el proveedor fallara.
+
 ---
 
 ## 4. Modelo canónico (v1)
@@ -298,12 +392,16 @@ Entidades mínimas. De este conjunto deben poder derivarse Lean Canvas, Business
 
 ## 9. Pendientes de decisión
 
-1. **Proveedor de modelo** — candidato: Google Gemini (free tier). Alternativa de extracción: Groq. Verificar límites vigentes.
+1. **Proveedor de modelo** — candidato: Google Gemini (free tier), ya implementado
+   detrás del puerto `CoachModel`; falta la API key y verificar los límites
+   vigentes. Alternativa de extracción: Groq.
 2. **Primera lente metodológica** además del árbol — candidata: Lean Canvas.
 3. **Compartir ideas** — ¿queda definitivamente fuera de v1?
 4. **Alcance de i18n** — ¿español e inglés desde el día uno o español primero?
 
-Resuelto: stack tecnológico (D5).
+Resuelto: stack tecnológico (D5), modelo de persistencia (D7), identidad única y
+alcance de la autenticación (D8), forma de la capa de IA (D9) y orden de
+persistencia de un turno (D10).
 
 ---
 
