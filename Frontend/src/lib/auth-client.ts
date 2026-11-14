@@ -17,6 +17,15 @@ export const authClient = createAuthClient({
 export const { useSession, signIn, signUp, signOut } = authClient;
 
 /**
+ * Copy used when the request never reached the API: the server is down, the
+ * machine is offline or the origin is blocked. The browser reports a network
+ * rejection (`TypeError: Failed to fetch`), never an HTTP status, so the
+ * message must not imply that credentials were wrong.
+ */
+export const CONNECTION_ERROR =
+  "No pudimos conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.";
+
+/**
  * Turns a Better Auth error into user copy.
  *
  * Better Auth returns English messages and stable codes; the UI speaks
@@ -44,7 +53,7 @@ export function authErrorMessage(
 
   if (known[code]) return known[code];
   if (error?.status === 429) return "Demasiados intentos. Espera un momento.";
-  if (!error) return "No pudimos conectar con el servidor.";
+  if (!error) return CONNECTION_ERROR;
 
   return "No pudimos completar la operación. Inténtalo de nuevo.";
 }

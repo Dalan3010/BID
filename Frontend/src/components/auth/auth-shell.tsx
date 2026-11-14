@@ -6,6 +6,7 @@ import { Logo } from "@/components/brand/logo";
 import { CinematicPhoto } from "@/components/motion/cinematic-photo";
 import { RevealHeadline } from "@/components/motion/reveal-headline";
 import { useCinematicEntrance } from "@/components/motion/use-cinematic-entrance";
+import { ClayPanel } from "@/components/ui/clay";
 
 /**
  * The frame of every authentication screen.
@@ -64,12 +65,12 @@ export function AuthShell({
         </div>
       </aside>
 
-      {/* Form */}
+      {/* Form — a floating clay block on the deep ground */}
       <main
         id="contenido"
         className="flex flex-col justify-center bg-ink-950 px-gutter py-12 lg:col-span-5 lg:py-16"
       >
-        <div className="mx-auto w-full max-w-sm">
+        <ClayPanel className="mx-auto w-full max-w-md p-7 sm:p-9">
           <div data-enter="block">
             <p className="eyebrow mb-5 text-bronze">{eyebrow}</p>
             <h1 className="font-serif text-title text-paper sm:text-[2.5rem] sm:leading-[1.05]">
@@ -89,7 +90,7 @@ export function AuthShell({
               {footer}
             </div>
           ) : null}
-        </div>
+        </ClayPanel>
       </main>
     </div>
   );

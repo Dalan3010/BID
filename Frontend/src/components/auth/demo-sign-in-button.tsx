@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { Alert } from "@/components/ui/alert";
 import { Button, type ButtonSize, type ButtonVariant } from "@/components/ui/button";
-import { authErrorMessage, signIn } from "@/lib/auth-client";
+import { authErrorMessage, CONNECTION_ERROR, signIn } from "@/lib/auth-client";
 import { DEMO_ACCOUNT } from "@/lib/config";
 import { safeNextPath } from "@/lib/session";
 
@@ -36,22 +36,28 @@ export function DemoSignInButton({
     setPending(true);
     setError(null);
 
-    const { error: authError } = await signIn.email({
-      email: DEMO_ACCOUNT.email,
-      password: DEMO_ACCOUNT.password,
-    });
+    try {
+      const { error: authError } = await signIn.email({
+        email: DEMO_ACCOUNT.email,
+        password: DEMO_ACCOUNT.password,
+      });
 
-    if (authError) {
+      if (authError) {
+        setPending(false);
+        setError(
+          authError.code === "INVALID_EMAIL_OR_PASSWORD"
+            ? "La cuenta demo no está disponible. Ejecuta `pnpm db:seed` en el servidor."
+            : authErrorMessage(authError),
+        );
+        return;
+      }
+
+      router.replace(safeNextPath(next));
+    } catch {
+      // The API is unreachable: `fetch` rejects before any HTTP status exists.
       setPending(false);
-      setError(
-        authError.code === "INVALID_EMAIL_OR_PASSWORD"
-          ? "La cuenta demo no está disponible. Ejecuta `pnpm db:seed` en el servidor."
-          : authErrorMessage(authError),
-      );
-      return;
+      setError(CONNECTION_ERROR);
     }
-
-    router.replace(safeNextPath(next));
   }
 
   return (

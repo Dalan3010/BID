@@ -68,7 +68,7 @@ export function Modal({
         if (event.target === event.currentTarget) onClose();
       }}
       className={cn(
-        "m-auto border border-line-strong bg-ink-900 p-0 text-paper shadow-panel",
+        "m-auto rounded-clay-lg border border-paper/[0.06] bg-ink-900 p-0 text-paper shadow-clay-panel",
         size === "md"
           ? "w-[min(32rem,calc(100vw-2rem))]"
           : "h-[calc(100dvh-2rem)] max-h-none w-[calc(100vw-2rem)] max-w-none",

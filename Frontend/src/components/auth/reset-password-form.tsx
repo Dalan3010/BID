@@ -7,7 +7,7 @@ import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/field";
-import { authClient, authErrorMessage } from "@/lib/auth-client";
+import { authClient, authErrorMessage, CONNECTION_ERROR } from "@/lib/auth-client";
 
 const MIN_PASSWORD = 8;
 
@@ -55,18 +55,24 @@ export function ResetPasswordForm() {
     setFieldError(null);
     setPending(true);
 
-    const { error: authError } = await authClient.resetPassword({
-      newPassword: password,
-      token: token as string,
-    });
+    try {
+      const { error: authError } = await authClient.resetPassword({
+        newPassword: password,
+        token: token as string,
+      });
 
-    if (authError) {
+      if (authError) {
+        setPending(false);
+        setError(authErrorMessage(authError));
+        return;
+      }
+
+      router.replace("/sign-in?reset=ok");
+    } catch {
+      // The API is unreachable: `fetch` rejects before any HTTP status exists.
       setPending(false);
-      setError(authErrorMessage(authError));
-      return;
+      setError(CONNECTION_ERROR);
     }
-
-    router.replace("/sign-in?reset=ok");
   }
 
   return (

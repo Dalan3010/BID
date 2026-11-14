@@ -9,6 +9,8 @@
     "start": "pnpm --filter @bid/web start",
     "lint": "pnpm --filter @bid/web lint",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "mock:api": "node mock/server.mjs",
+    "ui": "node mock/server.mjs & pnpm --filter @bid/web dev"
   }
 }

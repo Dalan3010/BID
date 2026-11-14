@@ -5,7 +5,7 @@ import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/field";
-import { authClient, authErrorMessage } from "@/lib/auth-client";
+import { authClient, authErrorMessage, CONNECTION_ERROR } from "@/lib/auth-client";
 
 /**
  * Requests a password reset link (RF-04).
@@ -26,20 +26,26 @@ export function ForgotPasswordForm() {
     setPending(true);
     setError(null);
 
-    const { error: authError } = await authClient.requestPasswordReset({
-      email: email.trim(),
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
+    try {
+      const { error: authError } = await authClient.requestPasswordReset({
+        email: email.trim(),
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
 
-    setPending(false);
+      setPending(false);
 
-    // Only transport failures are surfaced; "no such account" is not.
-    if (authError && (authError.status ?? 0) >= 500) {
-      setError(authErrorMessage(authError));
-      return;
+      // Only transport failures are surfaced; "no such account" is not.
+      if (authError && (authError.status ?? 0) >= 500) {
+        setError(authErrorMessage(authError));
+        return;
+      }
+
+      setSent(true);
+    } catch {
+      // The API is unreachable: `fetch` rejects before any HTTP status exists.
+      setPending(false);
+      setError(CONNECTION_ERROR);
     }
-
-    setSent(true);
   }
 
   if (sent) {

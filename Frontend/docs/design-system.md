@@ -9,13 +9,14 @@ los componentes.**
 
 | Token | Valor | Uso |
 |---|---|---|
-| `ink-950` | `#090909` | Fondo de página |
-| `ink-900` | `#111210` | Superficies elevadas (turnos del coach, paneles) |
-| `ink-800` | `#191A17` | Grafito: campos, skeletons |
-| `ink-700` | `#23241F` | Hover sobre grafito |
-| `stone` | `#77766F` | Texto terciario, etiquetas inactivas |
-| `mist` | `#C7C2B8` | Texto secundario |
-| `paper` | `#E5E0D6` | Texto principal; botón primario |
+| `ink-950` | `#0F0F0F` | Fondo de página |
+| `ink-900` | `#161616` | Superficies elevadas (paneles clay, turnos del coach) |
+| `ink-850` | `#1B1B1B` | Cara superior de los degradados clay, hover |
+| `ink-800` | `#1F1F1F` | Hundido: campos, pozos, skeletons |
+| `ink-700` | `#292929` | Hover sobre grafito |
+| `stone` | `#8A8578` | Texto terciario, etiquetas inactivas (5.2:1 sobre el fondo, 4.9:1 sobre panel) |
+| `mist` | `#C9C3B6` | Texto secundario |
+| `paper` | `#E6DEC5` | Texto principal (crema); cara del botón primario |
 | `bronze` | `#A77850` | Acento: confirmar al plan, marcas editoriales |
 | `amber` | `#B66F43` | Foco, estado "por revisar" |
 | `sage` | `#8F9A7E` | Estado validado |
@@ -41,9 +42,34 @@ Los titulares marcan palabras de acento entre asteriscos:
 
 - `px-gutter`: margen lateral fluido (`clamp(1.25rem, …, 3.5rem)`).
 - `max-w-studio`: 88 rem, ancho máximo de contenido.
-- Radios casi rectos: `rounded-xs` (2px), `rounded-sm` (4px). La suavidad la dan
-  la tipografía y el aire, no las esquinas.
-- Sombras profundas y difusas: `shadow-panel`, `shadow-float`.
+- Radios clay: `rounded-clay-sm` (14 px, campos), `rounded-clay` (20 px,
+  botones), `rounded-clay-lg` (28 px, tarjetas y diálogos). `rounded-xs`/`sm`
+  quedan para detalles internos (teclas, marcas).
+- Sombras clay, una sola fuente de luz arriba a la izquierda:
+  | Utilidad | Uso |
+  |---|---|
+  | `shadow-clay` | Bloque elevado estándar |
+  | `shadow-clay-lift` | Hover de un bloque interactivo |
+  | `shadow-clay-panel` | Tarjeta grande o diálogo flotante |
+  | `shadow-clay-inset` | Pozo hundido (inputs, lienzos vacíos) |
+  | `shadow-clay-pressed` | Botón pulsado (`active:`) |
+  | `shadow-clay-solid` | Botón claro (crema o bronce) |
+
+  La receta es siempre la misma: highlight interior superior, sombra interior
+  inferior y una sombra difusa exterior. Nunca `glow` de color.
+
+## Dark Claymorphism
+
+El producto se lee como bloques táctiles flotando sobre negro profundo:
+
+1. Fondo `ink-950`; los paneles suben a `ink-900` y nunca superan `ink-700`.
+2. Cada bloque lleva borde hairline (`border-paper/[0.06]`) + `shadow-clay`:
+   sin el highlight interior la pieza parece recortada, no esculpida.
+3. Los campos se hunden (`shadow-clay-inset`), los botones se elevan.
+4. El relieve reacciona: hover levanta 2 px, `active` hunde 1 px. El movimiento
+   es la prueba de que el bloque es físico.
+5. `ClayPanel` (`src/components/ui/clay.tsx`) encapsula todo: `tone`
+   (`raised` | `sunken` | `flush`) e `interactive` para superficies clicables.
 
 ## Utilidades propias
 
@@ -57,9 +83,10 @@ Los titulares marcan palabras de acento entre asteriscos:
 
 | Componente | Variantes / props clave | Notas |
 |---|---|---|
-| `Button`, `ButtonLink`, `buttonClasses` | `primary`, `accent`, `secondary`, `ghost`, `danger`; `sm`/`md`/`lg`; `loading` | Compactos. `accent` (bronce) se reserva para "añadir al plan". |
+| `Button`, `ButtonLink`, `buttonClasses` | `primary`, `accent`, `secondary`, `ghost`, `danger`; `sm`/`md`/`lg`; `loading` | Clay: degradado, highlight interior, `active` hundido. `accent` (bronce) se reserva para "añadir al plan". |
 | `ArrowIcon`, `PulseDot` | — | La flecha se desplaza 2 px en hover. |
-| `TextField`, `TextArea` | `label`, `hint`, `error`, `aside` | Subrayado; error enlazado con `aria-describedby`. |
+| `ClayPanel`, `ClayWell` | `tone` (`raised`/`sunken`/`flush`), `interactive` | Superficie clay reutilizable. `ClayWell` es el pozo hundido. |
+| `TextField`, `TextArea` | `label`, `hint`, `error`, `aside` | Pozo hundido con `shadow-clay-inset`; error enlazado con `aria-describedby`. |
 | `Alert` | `error` (`role="alert"`), `warning`, `info`, `success` (`role="status"`); `action` | Regla lateral fina en lugar de bloque de color. |
 | `ProgressBar`, `ProgressRing` | `value` 0..100, `label` | `role="progressbar"` + `aria-valuenow`; se dibujan con Anime.js. |
 | `Skeleton`, `SkeletonText`, `LoadingStatus` | — | Conservan el tamaño final: nada salta al llegar los datos. |
