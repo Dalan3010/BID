@@ -70,9 +70,26 @@ Hay **un solo `.env.local`**, en la raíz: `Frontend/next.config.ts` lo carga co
 | `pnpm lint` | ESLint (solo `Frontend`) |
 | `pnpm typecheck` | TypeScript sin emitir, en los dos paquetes |
 | `pnpm test` | Tests una vez |
+| `pnpm mock:api` | API simulada en `http://localhost:3001` (solo para ver la UI) |
+| `pnpm ui` | API simulada + cliente, para revisar la interfaz de punta a punta |
 
 > **No uses `npm install` en este repo.** El lockfile es `pnpm-lock.yaml`;
 > npm lo ignora, genera un árbol distinto y rompe la reproducibilidad.
+
+## Ver la UI sin la API
+
+La API del producto no vive en este repositorio. Para revisar la interfaz igual
+hay una API simulada, [`mock/server.mjs`](mock/server.mjs):
+
+```bash
+pnpm ui          # cliente en :3000 y mock en :3001
+```
+
+Responde el mismo contrato que `Frontend/src/lib/api.ts` y las rutas de Better
+Auth, con datos en memoria. **No es un backend**: no hay base de datos, ni
+autenticación real, ni IA. Cualquier correo y contraseña entran, el coach
+responde con un guion y todo vuelve al estado inicial al reiniciar el proceso.
+Sirve para revisar pantallas, no para probar seguridad ni persistencia.
 
 ## Entrar
 
