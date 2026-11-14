@@ -7,9 +7,10 @@ import { cn } from "@/lib/cn";
 /**
  * Form fields.
  *
- * Minimal: a label in eyebrow style, an underline-only input on dark ground
- * and room for a hint or an error. The error is linked with
- * `aria-describedby` and marks the input `aria-invalid`.
+ * Clay wells: the control sits sunken into the panel (`shadow-clay-inset`), so
+ * it reads as a slot carved for the input rather than a rectangle drawn on top.
+ * The label keeps the eyebrow style and the error is linked with
+ * `aria-describedby`, marking the input `aria-invalid`.
  */
 
 interface FieldChrome {
@@ -21,7 +22,7 @@ interface FieldChrome {
 }
 
 const CONTROL =
-  "w-full border-0 border-b border-line-strong bg-transparent px-0 py-3 text-[0.9375rem] text-paper placeholder:text-stone transition-colors duration-300 focus:border-amber focus:outline-none focus-visible:outline-none aria-[invalid=true]:border-danger disabled:opacity-50";
+  "w-full rounded-clay-sm border border-black/40 bg-ink-800 px-4 py-3 text-[0.9375rem] text-paper shadow-clay-inset placeholder:text-stone transition-[border-color,box-shadow,background-color] duration-300 hover:bg-ink-700/60 focus:border-amber/70 focus:bg-ink-800 focus:outline-none focus-visible:outline-none aria-[invalid=true]:border-danger/70 disabled:opacity-50";
 
 function FieldFrame({
   id,

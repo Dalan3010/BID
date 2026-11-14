@@ -6,37 +6,38 @@ import { cn } from "@/lib/cn";
 /**
  * Buttons.
  *
- * Compact by design: the studio speaks through type and space, not through
- * big colored blocks. Four variants:
+ * Clay relief: a soft gradient top face, an inner top highlight and a diffuse
+ * drop shadow, pressed in with `active:translate-y-px`. Four variants:
  *
- * - `primary`   paper on ink, the one action that matters on a screen
- * - `accent`    bronze, reserved for confirming something into the plan
- * - `secondary` hairline outline
+ * - `primary`   cream clay, the one action that matters on a screen
+ * - `accent`    bronze clay, reserved for confirming something into the plan
+ * - `secondary` graphite clay with a hairline edge
  * - `ghost`     text only, for tertiary actions
  *
- * Hover is a slow fill and a 2px arrow nudge (see `ArrowIcon`), never a glow.
+ * Hover lifts the fill and nudges the arrow 2px (see `ArrowIcon`), never glows.
  */
 
 export type ButtonVariant = "primary" | "accent" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 
 const BASE =
-  "group/button relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-sm font-medium tracking-[-0.005em] transition-[background-color,color,border-color,opacity] duration-300 ease-[var(--ease-studio)] disabled:cursor-not-allowed disabled:opacity-45";
+  "group/button relative inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-clay font-medium tracking-[-0.005em] transition-[transform,background-color,color,border-color,box-shadow,filter,opacity] duration-300 ease-[var(--ease-studio)] active:translate-y-px active:shadow-clay-pressed disabled:cursor-not-allowed disabled:opacity-45";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-paper text-ink-950 hover:bg-mist",
-  accent: "bg-bronze text-ink-950 hover:bg-amber",
-  secondary:
-    "border border-line-strong text-paper hover:border-paper/50 hover:bg-paper/[0.04]",
-  ghost: "text-mist hover:text-paper",
+  primary:
+    "bg-[linear-gradient(180deg,#f4ecd9_0%,#e6dec5_55%,#d8cfb2_100%)] text-ink-950 shadow-clay-solid hover:brightness-[1.04]",
+  accent:
+    "bg-[linear-gradient(180deg,#c79a6d_0%,#b98a5f_55%,#a77850_100%)] text-ink-950 shadow-clay-solid hover:brightness-[1.05]",
+  secondary: "border border-paper/[0.06] bg-ink-900 text-paper shadow-clay hover:bg-ink-850",
+  ghost: "text-mist hover:bg-paper/[0.05] hover:text-paper",
   danger:
-    "border border-danger/50 text-danger hover:border-danger hover:bg-danger/10",
+    "border border-danger/40 bg-danger/[0.09] text-danger shadow-clay hover:bg-danger/[0.15]",
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  sm: "h-9 px-3.5 text-[0.8125rem]",
+  sm: "h-9 px-4 text-[0.8125rem]",
   md: "h-11 px-5 text-sm",
-  lg: "h-12 px-6 text-[0.9375rem]",
+  lg: "h-12 px-7 text-[0.9375rem]",
 };
 
 /** Class string for anything that should look like a button. */

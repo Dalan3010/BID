@@ -46,21 +46,22 @@
 
 @theme {
   /* Palette: deep blacks, warm greys, one bronze accent used sparingly. */
-  --color-ink-950: #090909; /* page background */
-  --color-ink-900: #111210; /* raised surfaces */
-  --color-ink-800: #191a17; /* graphite: inputs, panels */
-  --color-ink-700: #23241f; /* hover on graphite */
-  --color-stone: #77766f; /* tertiary text, idle icons */
-  --color-mist: #c7c2b8; /* secondary text */
-  --color-paper: #e5e0d6; /* primary text */
+  --color-ink-950: #0f0f0f; /* page background */
+  --color-ink-900: #161616; /* raised surfaces (clay panels) */
+  --color-ink-850: #1b1b1b; /* top face of clay gradients, hover */
+  --color-ink-800: #1f1f1f; /* sunken clay: inputs, wells */
+  --color-ink-700: #292929; /* hover on graphite */
+  --color-stone: #8a8578; /* tertiary text, idle icons; 5.2:1 on the page, 4.9:1 on panels */
+  --color-mist: #c9c3b6; /* secondary text */
+  --color-paper: #e6dec5; /* primary text, cream */
   --color-bronze: #a77850; /* accent */
   --color-amber: #b66f43; /* accent, warmer: focus and highlights */
   --color-danger: #c9775f; /* errors, warm instead of neon red */
   --color-sage: #8f9a7e; /* validated state */
 
   /* Hairlines are paper at low alpha so they sit on any black. */
-  --color-line: rgb(229 224 214 / 0.1);
-  --color-line-strong: rgb(229 224 214 / 0.2);
+  --color-line: rgb(230 222 197 / 0.1);
+  --color-line-strong: rgb(230 222 197 / 0.2);
 
   /* Type */
   --font-sans:
@@ -85,15 +86,38 @@
   --text-eyebrow--line-height: 1;
   --text-eyebrow--letter-spacing: 0.22em;
 
-  /* Radii: almost square. Softness comes from type and space, not corners. */
+  /* Radii: claymorphism. Soft, rounded, tactile blocks. */
   --radius-xs: 2px;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 10px;
+  --radius-clay-sm: 0.875rem; /* 14px: inputs, small chips */
+  --radius-clay: 1.25rem; /* 20px: buttons, compact panels */
+  --radius-clay-lg: 1.75rem; /* 28px: cards, dialogs */
 
-  /* Shadows: deep and diffuse, no glow. */
+  /*
+   * Shadows: clay relief. One light source, top-left.
+   * Raised surfaces get a top inner highlight, a bottom inner shade and a
+   * diffuse drop shadow; sunken surfaces invert that with an inset shadow.
+   */
   --shadow-panel: 0 30px 80px -40px rgb(0 0 0 / 0.9);
   --shadow-float: 0 18px 50px -20px rgb(0 0 0 / 0.85);
+  --shadow-clay:
+    inset 0 1px 0 rgb(255 255 255 / 0.05), inset 0 -1px 0 rgb(0 0 0 / 0.35),
+    0 14px 32px -20px rgb(0 0 0 / 0.9), 0 2px 6px rgb(0 0 0 / 0.35);
+  --shadow-clay-lift:
+    inset 0 1px 0 rgb(255 255 255 / 0.07), inset 0 -1px 0 rgb(0 0 0 / 0.35),
+    0 22px 44px -22px rgb(0 0 0 / 0.95), 0 4px 10px rgb(0 0 0 / 0.4);
+  --shadow-clay-panel:
+    inset 0 1px 0 rgb(255 255 255 / 0.04), inset 0 -1px 0 rgb(0 0 0 / 0.4),
+    0 40px 80px -40px rgb(0 0 0 / 0.95), 0 2px 8px rgb(0 0 0 / 0.4);
+  --shadow-clay-inset:
+    inset 0 2px 5px rgb(0 0 0 / 0.65), inset 0 -1px 0 rgb(255 255 255 / 0.03);
+  --shadow-clay-pressed:
+    inset 0 3px 8px rgb(0 0 0 / 0.55), inset 0 -1px 0 rgb(255 255 255 / 0.04);
+  --shadow-clay-solid:
+    inset 0 1px 0 rgb(255 255 255 / 0.45), 0 10px 24px -14px rgb(0 0 0 / 0.8),
+    0 2px 4px rgb(0 0 0 / 0.4);
 
   /* Motion */
   --ease-studio: cubic-bezier(0.16, 1, 0.3, 1);
@@ -189,8 +213,8 @@
 /* Gradient that grounds text placed over photography. */
 @utility scrim {
   background:
-    radial-gradient(120% 90% at 50% 40%, transparent 30%, rgb(9 9 9 / 0.75) 100%),
-    linear-gradient(180deg, rgb(9 9 9 / 0.55) 0%, rgb(9 9 9 / 0.1) 35%, rgb(9 9 9 / 0.92) 100%);
+    radial-gradient(120% 90% at 50% 40%, transparent 30%, rgb(15 15 15 / 0.75) 100%),
+    linear-gradient(180deg, rgb(15 15 15 / 0.55) 0%, rgb(15 15 15 / 0.1) 35%, rgb(15 15 15 / 0.92) 100%);
 }
 
 /* -------------------------------------------------------------------------- */
