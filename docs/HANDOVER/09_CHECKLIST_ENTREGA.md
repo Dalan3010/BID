@@ -75,7 +75,7 @@ Verificación rápida antes de mostrar, entregar o retomar el proyecto.
 - [ ] `pnpm typecheck` pasa
 - [ ] `pnpm test` pasa
 - [ ] `pnpm lint` pasa
-- [ ] `node apps/web/e2e/flow.spec.mjs` pasa (si Playwright está instalado)
+- [ ] `node Frontend/e2e/flow.spec.mjs` pasa (si Playwright está instalado)
 
 ## 10. Documentación
 

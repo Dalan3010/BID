@@ -30,7 +30,7 @@ pnpm install
 Hay **un solo archivo `.env.local` en la raíz**, compartido por API y cliente:
 
 - La API lo carga con `tsx --env-file-if-exists=../../.env.local`.
-- El cliente lo carga desde `apps/web/next.config.ts` con `loadEnvConfig`.
+- El cliente lo carga desde `Frontend/next.config.ts` con `loadEnvConfig`.
 
 ```bash
 cp .env.example .env.local
@@ -117,7 +117,7 @@ Desde la raíz:
 | `pnpm dev` | API + web en paralelo |
 | `pnpm build` | Build de producción del cliente |
 | `pnpm start` | Sirve el build del cliente |
-| `pnpm lint` | ESLint (solo `apps/web`) |
+| `pnpm lint` | ESLint (solo `Frontend`) |
 | `pnpm typecheck` | `tsc --noEmit` en todos los paquetes |
 | `pnpm test` | Vitest en todos los paquetes |
 | `pnpm test:watch` | Vitest en modo watch (API) |

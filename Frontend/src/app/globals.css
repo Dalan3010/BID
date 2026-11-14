@@ -7,7 +7,7 @@
  *
  * Components consume the tokens through Tailwind utilities generated from
  * `@theme` (e.g. `bg-ink-900`, `text-paper`, `font-serif`, `border-line`).
- * See `apps/web/docs/design-system.md`.
+ * See `Frontend/docs/design-system.md`.
  */
 
 @import "tailwindcss";

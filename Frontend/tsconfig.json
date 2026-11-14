@@ -16,7 +16,7 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./src/*"],
-      "@bid/core": ["../../packages/core/src/index.ts"]
+      "@bid/core": ["../packages/core/src/index.ts"]
     }
   },
   "include": [

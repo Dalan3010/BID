@@ -51,7 +51,7 @@ El cliente lee `NEXT_PUBLIC_API_URL` del único `.env.local` de la raíz
 (`next.config.ts` lo carga con `loadEnvConfig`). Se incrusta en el bundle al
 compilar, así que debe estar definido antes de `pnpm build`.
 
-| Script (en `apps/web`) | Qué hace |
+| Script (en `Frontend`) | Qué hace |
 |---|---|
 | `pnpm dev` | Servidor de desarrollo |
 | `pnpm build` / `pnpm start` | Build de producción y servidor |
@@ -80,7 +80,7 @@ que responde `401` sin cookie.
 ## Estructura
 
 ```
-apps/web/
+Frontend/
 ├── e2e/                 Recorrido Playwright contra la API real
 ├── playwright.config.ts
 ├── public/

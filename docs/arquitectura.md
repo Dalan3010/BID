@@ -28,7 +28,7 @@ procesos separados; el dominio es el único código que comparten.
 
 ```
         +---------------------+            +---------------------+
-        |  apps/web           |   HTTP     |  apps/api           |
+        |  Frontend           |   HTTP     |  apps/api           |
         |  Next.js (cliente)  | ---------> |  Hono (servidor)    |
         +----------+----------+            +----------+----------+
                    | importa                          | importa
@@ -43,7 +43,7 @@ procesos separados; el dominio es el único código que comparten.
   canónico, regla de merge y proyecciones. No importa nada de `apps/`.
 - **`apps/api`** es el único proceso que habla con Postgres y con Better Auth.
   Expone JSON y un stream de texto; no renderiza HTML.
-- **`apps/web`** no importa nada de `apps/api` ni toca la base. Habla con la API
+- **`Frontend`** no importa nada de `apps/api` ni toca la base. Habla con la API
   por HTTP y comparte con ella solo tipos y proyecciones puras de `@bid/core`.
 
 La razón de la separación es de despliegue y de límites: el cliente puede
@@ -126,7 +126,7 @@ apps/api/
         ├── ai/             Coach y extractor: guion y proveedor
         └── container.ts    Composition root: qué implementación se usa
 
-apps/web/src/
+Frontend/src/
 ├── app/
 │   ├── (auth)/             Rutas públicas: entrar, crear cuenta, recuperar
 │   ├── (app)/              Rutas protegidas: dashboard, idea, perfil
@@ -423,8 +423,8 @@ de ver que no pasa nada (RF-24).
 
 Implementado:
 
-- Monorepo pnpm con `packages/core`, `apps/api` y `apps/web`.
-- Scaffold de Next.js 16 + TypeScript + Tailwind 4 en `apps/web`.
+- Monorepo pnpm con `packages/core`, `apps/api` y `Frontend`.
+- Scaffold de Next.js 16 + TypeScript + Tailwind 4 en `Frontend`.
 - Modelo canónico (`packages/core/src/idea/types.ts`).
 - Proyecciones puras: `findGaps`, `completionRatio`, `buildTree`, `layoutTree`.
 - Regla de merge `edited > confirmed > inferred` como funciones puras
@@ -439,7 +439,7 @@ Implementado:
   cuenta.
 - API Hono con CORS por origen exacto, cookie httpOnly y rutas de ideas,
   mensajes, extracciones, propuestas y cuenta.
-- Cliente HTTP tipado (`apps/web/src/lib/api.ts`) con `credentials: "include"`.
+- Cliente HTTP tipado (`Frontend/src/lib/api.ts`) con `credentials: "include"`.
 - Rutas: entrar, crear cuenta, recuperar contraseña, dashboard y perfil.
 - Aislamiento por dueño: una idea ajena devuelve `IdeaNotFoundError`, no
   "prohibido".
@@ -479,7 +479,7 @@ con datos fijos, la IA al final.
 - **TypeScript estricto** (`strict: true`). Sin `any` en el dominio.
 - **Dominio puro:** si un archivo en `packages/core` importa algo externo, es un
   error de arquitectura.
-- **El cliente no importa la API:** si `apps/web` importa algo de `apps/api`, es
+- **El cliente no importa la API:** si `Frontend` importa algo de `apps/api`, es
   un error de arquitectura. Lo compartido vive en `@bid/core`.
 - **Comentarios en inglés**, identificadores en inglés, documentación en
   español.

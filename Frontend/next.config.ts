@@ -7,7 +7,7 @@ import type { NextConfig } from "next";
  * The repository has a single `.env.local`, at the root, shared by the API and
  * the client. Loading it here means `NEXT_PUBLIC_API_URL` is declared once.
  */
-const repositoryRoot = path.resolve(import.meta.dirname, "../..");
+const repositoryRoot = path.resolve(import.meta.dirname, "..");
 loadEnvConfig(repositoryRoot);
 
 const nextConfig: NextConfig = {

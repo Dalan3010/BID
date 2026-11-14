@@ -64,9 +64,9 @@ Thumbs.db
 # the build state. These are the intermediate files of one run — the measured
 # spec, the scaffold, the crop-by-crop diff — and the tooling regenerates them,
 # so they do not belong in the history.
-apps/web/.impeccable/build/
-apps/web/.impeccable/review/
+Frontend/.impeccable/build/
+Frontend/.impeccable/review/
 
-# Playwright artifacts (apps/web e2e)
-apps/web/test-results/
-apps/web/playwright-report/
+# Playwright artifacts (Frontend e2e)
+Frontend/test-results/
+Frontend/playwright-report/

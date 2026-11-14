@@ -67,7 +67,7 @@ Los tests de la API corren **sin Postgres**: usan repositorios in-memory.
 | `db/idea-repository.test.ts` | Persistencia y merge en el repositorio |
 | `db/demo-book.test.ts` | Libro demo y reset |
 
-### 3.5 E2E (`apps/web/e2e/flow.spec.mjs`)
+### 3.5 E2E (`Frontend/e2e/flow.spec.mjs`)
 
 Recorrido real en navegador. **17 verificaciones**:
 
@@ -91,7 +91,7 @@ Cómo correrlo:
 pnpm dev
 
 # Terminal 2
-cd apps/web
+cd Frontend
 node e2e/flow.spec.mjs
 ```
 
@@ -150,7 +150,7 @@ Sé honesto con esto al continuar:
 | Herramienta | Comando | Alcance |
 |---|---|---|
 | TypeScript | `pnpm typecheck` | Todo el monorepo |
-| ESLint | `pnpm lint` | Solo `apps/web` |
+| ESLint | `pnpm lint` | Solo `Frontend` |
 | Vitest | `pnpm test` | `core` + `api` |
 
 > `apps/api` no tiene ESLint configurado hoy. El typecheck cubre lo esencial.
