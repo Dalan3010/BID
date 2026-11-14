@@ -6,7 +6,7 @@ import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/alert";
 import { ArrowIcon, Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/field";
-import { authErrorMessage, signUp } from "@/lib/auth-client";
+import { authErrorMessage, CONNECTION_ERROR, signUp } from "@/lib/auth-client";
 import { useRedirectIfSignedIn } from "@/lib/session";
 
 /** Better Auth's default minimum; checked here only to fail fast. */
@@ -35,19 +35,25 @@ export function SignUpForm() {
     setPasswordError(null);
     setPending(true);
 
-    const { error: authError } = await signUp.email({
-      name: name.trim(),
-      email: email.trim(),
-      password,
-    });
+    try {
+      const { error: authError } = await signUp.email({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
 
-    if (authError) {
+      if (authError) {
+        setPending(false);
+        setError(authErrorMessage(authError));
+        return;
+      }
+
+      router.replace("/dashboard");
+    } catch {
+      // The API is unreachable: `fetch` rejects before any HTTP status exists.
       setPending(false);
-      setError(authErrorMessage(authError));
-      return;
+      setError(CONNECTION_ERROR);
     }
-
-    router.replace("/dashboard");
   }
 
   return (

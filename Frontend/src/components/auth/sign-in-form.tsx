@@ -7,7 +7,7 @@ import { useState, type FormEvent } from "react";
 import { Alert } from "@/components/ui/alert";
 import { ArrowIcon, Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/field";
-import { authErrorMessage, signIn } from "@/lib/auth-client";
+import { authErrorMessage, CONNECTION_ERROR, signIn } from "@/lib/auth-client";
 import { safeNextPath, useRedirectIfSignedIn } from "@/lib/session";
 
 import { DemoSignInButton } from "./demo-sign-in-button";
@@ -31,18 +31,24 @@ export function SignInForm() {
     setPending(true);
     setError(null);
 
-    const { error: authError } = await signIn.email({
-      email: email.trim(),
-      password,
-    });
+    try {
+      const { error: authError } = await signIn.email({
+        email: email.trim(),
+        password,
+      });
 
-    if (authError) {
+      if (authError) {
+        setPending(false);
+        setError(authErrorMessage(authError));
+        return;
+      }
+
+      router.replace(safeNextPath(next));
+    } catch {
+      // The API is unreachable: `fetch` rejects before any HTTP status exists.
       setPending(false);
-      setError(authErrorMessage(authError));
-      return;
+      setError(CONNECTION_ERROR);
     }
-
-    router.replace(safeNextPath(next));
   }
 
   return (
