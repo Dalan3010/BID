@@ -78,6 +78,23 @@ El producto se lee como bloques táctiles flotando sobre negro profundo:
 | `eyebrow` | Etiqueta pequeña en mayúsculas con tracking |
 | `grain` | Grano de película fijo sobre toda la página (en `<body>`) |
 | `scrim` | Viñeta y degradado para texto sobre fotografía |
+| `material-dots` | Malla de puntos, papel técnico (muestras de proyecto) |
+| `material-rules` | Líneas horizontales, página de registro |
+| `material-grid` | Retícula de ejes, lámina técnica |
+| `material-diagonal` | Trama diagonal, grafito rayado |
+
+### Miniaturas de proyecto
+
+Una idea no tiene fotografía propia: su miniatura es una **muestra de
+material**, no una foto. `ProjectThumbnail`
+(`src/components/dashboard/project-thumbnail.tsx`) es un pozo hundido
+(`bg-ink-950` + `shadow-clay-inset`) con una de las cuatro texturas
+`material-*`, luz cenital (`bg-gradient-to-t`) y un sello editorial —el
+monograma del título en serif itálica sobre el nombre del material en
+`eyebrow`— que sube de tono en hover y focus. La textura se elige de forma
+determinista desde el `id` (`src/lib/project-thumbnail.ts`), así que cada idea
+conserva su muestra en cualquier dispositivo y no hace falta recordarla en la
+API.
 
 ## Componentes (`src/components/ui`)
 

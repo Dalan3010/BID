@@ -6,6 +6,24 @@ verificó**.
 
 ---
 
+## 2026-11-15 — Miniaturas de proyecto como muestras de material
+
+Las tarjetas del Estudio dejaron de repetir las fotografías de paisajes: cada
+idea lleva una **muestra de material** determinista (puntos, pauta, retícula o
+diagonal) sobre un pozo hundido, con luz cenital y el monograma del título.
+
+- **Qué**: nuevo `ProjectThumbnail` (`src/components/dashboard/project-thumbnail.tsx`)
+  y helper puro `src/lib/project-thumbnail.ts` (`materialFor`, `monogramFor`).
+  `IdeaEntry` ya no usa `next/image` ni `coverFor`; se elimina
+  `src/lib/covers.ts` junto con su test.
+- **Por qué**: seis fotos repetidas para N ideas leían como relleno y competían
+  con la fotografía del encabezado; el estudio necesitaba textura, no paisaje.
+- **Cómo se verificó**: `vitest run`, `next typegen && tsc --noEmit`, `eslint`
+  sobre los archivos tocados, y compilación con Tailwind para confirmar que
+  `material-*`, `bg-gradient-to-t` y las clases arbitrarias nuevas generan CSS.
+
+---
+
 ## 2026-11-07 — Once mejoras más, todas de frontend
 
 Ningún endpoint nuevo ni cambio en `apps/api`. Dos de ellas añaden

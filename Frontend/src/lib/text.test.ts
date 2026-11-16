@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { coverFor } from "./covers";
 import { firstName, formatRelative, plural, toPercent } from "./format";
 import { parseWords, plainText } from "./headline";
 import { parseInline, parseRichText } from "./rich-text";
@@ -60,12 +59,5 @@ describe("navigation safety", () => {
     expect(safeNextPath("https://evil.example")).toBe("/dashboard");
     expect(safeNextPath("//evil.example")).toBe("/dashboard");
     expect(safeNextPath(null)).toBe("/dashboard");
-  });
-});
-
-describe("covers", () => {
-  it("is stable for the same id", () => {
-    expect(coverFor("abc")).toBe(coverFor("abc"));
-    expect(coverFor("abc")).toMatch(/^\/images\/.+\.jpg$/);
   });
 });

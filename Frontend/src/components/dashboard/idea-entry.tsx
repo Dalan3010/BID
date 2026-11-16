@@ -1,16 +1,16 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { ProgressBar } from "@/components/ui/progress";
 import type { IdeaProgress } from "@/lib/api";
-import { coverFor } from "@/lib/covers";
 import { cn } from "@/lib/cn";
 import { DIMENSIONS, STATUS_LABEL, statusesFromAgenda } from "@/lib/dimensions";
 import { formatRelative, plural, toPercent } from "@/lib/format";
 
+import { ProjectThumbnail } from "./project-thumbnail";
+
 /**
  * One idea in the studio, laid out as an editorial entry rather than a card:
- * a running number, a cropped photograph, the title in serif, and a column of
+ * a running number, a material swatch, the title in serif, and a column of
  * facts that all come from `GET /api/ideas` (completion, gaps, agenda, date).
  */
 export function IdeaEntry({
@@ -33,20 +33,12 @@ export function IdeaEntry({
         href={`/ideas/${idea.id}`}
         className="group grid gap-6 py-8 transition-colors duration-500 hover:bg-paper/[0.02] focus-visible:bg-paper/[0.03] md:grid-cols-12 md:gap-8 md:py-10"
       >
-        {/* Number + cover */}
+        {/* Number + material swatch */}
         <div className="flex items-start gap-5 md:col-span-4 lg:col-span-3">
           <span className="eyebrow w-6 shrink-0 pt-1 text-stone">
             {String(index + 1).padStart(2, "0")}
           </span>
-          <div className="relative aspect-[4/3] w-full overflow-hidden bg-ink-800">
-            <Image
-              src={coverFor(idea.id)}
-              alt=""
-              fill
-              sizes="(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 90vw"
-              className="object-cover opacity-80 transition-[transform,opacity] duration-[1600ms] ease-[var(--ease-studio)] group-hover:scale-[1.04] group-hover:opacity-100"
-            />
-          </div>
+          <ProjectThumbnail id={idea.id} title={idea.title} />
         </div>
 
         {/* Title + summary */}
