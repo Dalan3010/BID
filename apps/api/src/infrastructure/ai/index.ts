@@ -1,8 +1,11 @@
 import type { CoachModel } from "../../application/ports/coach-model";
-import { FallbackCoachModel } from "./fallback";
+import type { Extractor } from "../../application/ports/extractor";
+import { FallbackCoachModel, FallbackExtractor } from "./fallback";
 import { GoogleCoachModel } from "./google-coach-model";
 import { ProviderCoachModel, buildProviderMessages } from "./provider-coach-model";
+import { ProviderExtractor } from "./provider-extractor";
 import { RehearsalCoachModel } from "./rehearsal-coach-model";
+import { RehearsalExtractor } from "./rehearsal-extractor";
 
 /**
  * Which model the application talks to.
@@ -52,4 +55,20 @@ export function createCoachModel(options: {
   }
 
   return new RehearsalCoachModel();
+}
+
+/**
+ * The extractor the application uses.
+ *
+ * It follows the coach's rule: the same provider decides. A scripted coach
+ * with a live extractor would make the demo inconsistent.
+ */
+export function createExtractor(options: {
+  readonly provider?: CoachProvider;
+}): Extractor {
+  if (options.provider === "live") {
+    return new FallbackExtractor(new ProviderExtractor(), new RehearsalExtractor());
+  }
+
+  return new RehearsalExtractor();
 }

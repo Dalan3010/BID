@@ -8,3 +8,6 @@ export * from "./edit-node";
 export * from "./get-coach-agenda";
 export * from "./build-coach-context";
 export * from "./send-message";
+export * from "./extract-knowledge";
+export * from "./propose-extracted-nodes";
+export * from "./resolve-proposal";

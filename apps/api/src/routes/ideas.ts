@@ -11,7 +11,9 @@ import { createIdeaSchema, readJson } from "../lib/body";
 import { notFound } from "../lib/http-error";
 import { requiredParam } from "../lib/params";
 import { requireUser } from "../lib/session";
+import { postExtraction } from "./extractions";
 import { postMessage } from "./messages";
+import { postProposal } from "./proposals";
 
 /**
  * Everything under `/api/ideas`.
@@ -80,3 +82,9 @@ ideas.get("/:id", async (context) => {
 
 /** One turn of the conversation. */
 ideas.post("/:id/messages", postMessage);
+
+/** Reads the conversation and proposes structure. */
+ideas.post("/:id/extractions", postExtraction);
+
+/** The user accepts, corrects or discards a proposal. */
+ideas.post("/:id/proposals/:nodeId", postProposal);
