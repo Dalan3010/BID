@@ -70,3 +70,6 @@ Frontend/.impeccable/review/
 # Playwright artifacts (Frontend e2e)
 Frontend/test-results/
 Frontend/playwright-report/
+
+# CodeGraph index (per-worktree, regenerated locally)
+.codegraph/
