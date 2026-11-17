@@ -14,4 +14,6 @@ export * from "./send-message";
 export * from "./extract-knowledge";
 export * from "./propose-extracted-nodes";
 export * from "./resolve-proposal";
+export * from "./list-idea-versions";
+export * from "./diff-idea-version";
 export * from "./reset-demo";

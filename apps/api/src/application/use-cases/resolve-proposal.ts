@@ -1,5 +1,9 @@
 import { isEditable, type IdeaNode } from "@bid/core";
-import { NodeNotEditableError, NodeNotFoundError } from "../errors";
+import {
+  NodeNotEditableError,
+  NodeNotFoundError,
+  NotAProposalError,
+} from "../errors";
 import type { IdeaRepository } from "../ports/idea-repository";
 
 export interface ResolveProposalInput {
@@ -44,8 +48,27 @@ export async function resolveProposal(
     throw new NodeNotFoundError(input.nodeId);
   }
 
+  // Only a pending proposal can be resolved. A node that is already confirmed
+  // or edited is knowledge, not a question anymore.
+  if (node.source !== "inferred") {
+    throw new NotAProposalError(node.id);
+  }
+
   if (input.decision === "discard") {
     await repository.removeNode(input.ideaId, input.nodeId);
+
+    // A discarded proposal was never part of a snapshot: recording its removal
+    // would create an empty version. Only a deletion that actually changes the
+    // latest recorded graph deserves a new one.
+    const latest = await repository.findLatestVersion(input.ideaId);
+    const wasSnapshotted =
+      latest?.graph.nodes.some((snapshotNode) => snapshotNode.id === node.id) ??
+      false;
+
+    if (wasSnapshotted) {
+      await repository.saveVersion(input.ideaId);
+    }
+
     return { node: null, source: null };
   }
 
@@ -67,6 +90,8 @@ export async function resolveProposal(
       throw new NodeNotFoundError(input.nodeId);
     }
 
+    await repository.saveVersion(input.ideaId);
+
     return { node: updated, source: "edited" };
   }
 
@@ -79,6 +104,8 @@ export async function resolveProposal(
   if (!updated) {
     throw new NodeNotFoundError(input.nodeId);
   }
+
+  await repository.saveVersion(input.ideaId);
 
   return { node: updated, source: "confirmed" };
 }

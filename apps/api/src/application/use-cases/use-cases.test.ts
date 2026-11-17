@@ -8,17 +8,20 @@ import {
   NodeNotEditableError,
   NodeNotFoundError,
   SourceTransitionError,
+  VersionNotFoundError,
 } from "../errors";
 import { InMemoryIdeaRepository } from "../testing/in-memory-idea-repository";
 import { confirmNode } from "./confirm-node";
 import { createIdea } from "./create-idea";
 import { createManualNode } from "./create-manual-node";
 import { deleteIdea } from "./delete-idea";
+import { diffIdeaVersion } from "./diff-idea-version";
 import { editNode } from "./edit-node";
 import { getCoachAgenda } from "./get-coach-agenda";
 import { loadIdeaGraph } from "./load-idea-graph";
 import { loadIdeaGraphForOwner } from "./load-idea-graph-for-owner";
 import { listIdeasWithProgress } from "./list-ideas-with-progress";
+import { listIdeaVersions } from "./list-idea-versions";
 import { proposeNode } from "./propose-node";
 import { updateIdea } from "./update-idea";
 
@@ -693,5 +696,192 @@ describe("deleteIdea", () => {
       deleteIdea(repository, { ideaId: idea.id, ownerId: "intruder" }),
     ).rejects.toBeInstanceOf(IdeaNotFoundError);
     expect(await repository.findById(idea.id)).not.toBeNull();
+  });
+});
+
+describe("listIdeaVersions", () => {
+  let repository: InMemoryIdeaRepository;
+  let ideaId: string;
+
+  beforeEach(async () => {
+    repository = new InMemoryIdeaRepository();
+    const idea = await createIdea(repository, {
+      ownerId: OWNER,
+      title: "Coffee subscription",
+    });
+    ideaId = idea.id;
+  });
+
+  it("lists the snapshots newest first", async () => {
+    await createManualNode(repository, {
+      ideaId,
+      ownerId: OWNER,
+      type: "problem",
+      content: "Offices lack good coffee",
+    });
+    await createManualNode(repository, {
+      ideaId,
+      ownerId: OWNER,
+      type: "segment",
+      content: "Small offices",
+    });
+
+    const versions = await listIdeaVersions(repository, {
+      ideaId,
+      ownerId: OWNER,
+    });
+
+    expect(versions.map((version) => version.version)).toEqual([2, 1]);
+    expect(versions[0].nodeCount).toBe(2);
+    expect(versions[1].nodeCount).toBe(1);
+  });
+
+  it("answers not-found for an idea owned by somebody else", async () => {
+    await expect(
+      listIdeaVersions(repository, { ideaId, ownerId: "intruder" }),
+    ).rejects.toBeInstanceOf(IdeaNotFoundError);
+  });
+
+  it("answers not-found for an idea that does not exist", async () => {
+    await expect(
+      listIdeaVersions(repository, { ideaId: "missing", ownerId: OWNER }),
+    ).rejects.toBeInstanceOf(IdeaNotFoundError);
+  });
+});
+
+describe("diffIdeaVersion", () => {
+  let repository: InMemoryIdeaRepository;
+  let ideaId: string;
+
+  beforeEach(async () => {
+    repository = new InMemoryIdeaRepository();
+    const idea = await createIdea(repository, {
+      ownerId: OWNER,
+      title: "Coffee subscription",
+    });
+    ideaId = idea.id;
+  });
+
+  async function addNode(
+    type: "problem" | "segment" | "revenue",
+    content: string,
+  ) {
+    return repository.addNode({
+      ideaId,
+      type,
+      content,
+      source: "edited",
+    });
+  }
+
+  it("reports every node as added for version 1", async () => {
+    await addNode("problem", "Offices lack good coffee");
+    await repository.saveVersion(ideaId);
+
+    const diff = await diffIdeaVersion(repository, {
+      ideaId,
+      ownerId: OWNER,
+      version: 1,
+    });
+
+    expect(diff.from).toBeNull();
+    expect(diff.to).toEqual({ version: 1, createdAt: expect.any(String), nodeCount: 1 });
+    expect(diff.added).toHaveLength(1);
+    expect(diff.modified).toEqual([]);
+    expect(diff.removed).toEqual([]);
+  });
+
+  it("compares against the previous version by default", async () => {
+    const kept = await addNode("problem", "Offices lack good coffee");
+    const dropped = await addNode("segment", "Small offices");
+    await repository.saveVersion(ideaId);
+
+    await repository.updateNode(ideaId, kept.id, {
+      content: "Offices lack great coffee",
+    });
+    await repository.removeNode(ideaId, dropped.id);
+    await addNode("revenue", "Monthly subscription");
+    await repository.saveVersion(ideaId);
+
+    const diff = await diffIdeaVersion(repository, {
+      ideaId,
+      ownerId: OWNER,
+      version: 2,
+    });
+
+    expect(diff.from?.version).toBe(1);
+    expect(diff.to.version).toBe(2);
+    expect(diff.added.map((node) => node.content)).toEqual([
+      "Monthly subscription",
+    ]);
+    expect(diff.modified).toHaveLength(1);
+    expect(diff.modified[0].after.content).toBe("Offices lack great coffee");
+    expect(diff.removed.map((node) => node.content)).toEqual(["Small offices"]);
+  });
+
+  it("compares against an explicit version", async () => {
+    await addNode("problem", "Offices lack good coffee");
+    await repository.saveVersion(ideaId);
+
+    await addNode("segment", "Small offices");
+    await repository.saveVersion(ideaId);
+
+    const diff = await diffIdeaVersion(repository, {
+      ideaId,
+      ownerId: OWNER,
+      version: 2,
+      against: 1,
+    });
+
+    expect(diff.from?.version).toBe(1);
+    expect(diff.added.map((node) => node.content)).toEqual(["Small offices"]);
+    expect(diff.removed).toEqual([]);
+  });
+
+  it("rejects a zero as the comparison version", async () => {
+    await repository.saveVersion(ideaId);
+
+    await expect(
+      diffIdeaVersion(repository, {
+        ideaId,
+        ownerId: OWNER,
+        version: 1,
+        against: 0,
+      }),
+    ).rejects.toBeInstanceOf(InvalidIdeaError);
+  });
+
+  it("rejects a comparison version that is not older", async () => {
+    await repository.saveVersion(ideaId);
+    await repository.saveVersion(ideaId);
+
+    await expect(
+      diffIdeaVersion(repository, {
+        ideaId,
+        ownerId: OWNER,
+        version: 2,
+        against: 2,
+      }),
+    ).rejects.toBeInstanceOf(InvalidIdeaError);
+  });
+
+  it("answers not-found for a missing version", async () => {
+    await repository.saveVersion(ideaId);
+
+    await expect(
+      diffIdeaVersion(repository, { ideaId, ownerId: OWNER, version: 9 }),
+    ).rejects.toBeInstanceOf(VersionNotFoundError);
+  });
+
+  it("answers not-found for an idea owned by somebody else", async () => {
+    await repository.saveVersion(ideaId);
+
+    await expect(
+      diffIdeaVersion(repository, {
+        ideaId,
+        ownerId: "intruder",
+        version: 1,
+      }),
+    ).rejects.toBeInstanceOf(IdeaNotFoundError);
   });
 });

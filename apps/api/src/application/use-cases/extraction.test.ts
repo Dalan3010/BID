@@ -10,7 +10,7 @@ import { confirmNode } from "./confirm-node";
 import { extractKnowledge } from "./extract-knowledge";
 import { proposeExtractedNodes } from "./propose-extracted-nodes";
 import { resolveProposal } from "./resolve-proposal";
-import { IdeaNotFoundError } from "../errors";
+import { IdeaNotFoundError, NotAProposalError } from "../errors";
 
 const OWNER = "owner-1";
 const OTHER = "owner-2";
@@ -221,6 +221,10 @@ describe("resolveProposal", () => {
     const graph = await repository.loadGraph(idea.id);
     expect(graph?.nodes[0].source).toBe("confirmed");
     expect(graph?.nodes[0].confidence).toBeNull();
+
+    const versions = await repository.listVersions(idea.id);
+    expect(versions).toHaveLength(1);
+    expect(versions[0].nodeCount).toBe(1);
   });
 
   it("corrects a proposal and marks it as edited", async () => {
@@ -243,6 +247,10 @@ describe("resolveProposal", () => {
 
     expect(result.source).toBe("edited");
     expect(result.node?.content).toBe("40 por mes, con envío gratis");
+
+    const versions = await repository.listVersions(idea.id);
+    expect(versions).toHaveLength(1);
+    expect(versions[0].nodeCount).toBe(1);
   });
 
   it("discards a proposal", async () => {
@@ -264,6 +272,88 @@ describe("resolveProposal", () => {
 
     expect(result.node).toBeNull();
     expect((await repository.loadGraph(idea.id))?.nodes).toHaveLength(0);
+
+    // The proposal was never snapshotted: discarding it does not add a version.
+    expect(await repository.listVersions(idea.id)).toHaveLength(0);
+  });
+
+  it("records a version when discarding a snapshotted proposal", async () => {
+    const repository = new InMemoryIdeaRepository();
+    const idea = await createIdea(repository, { ownerId: OWNER, title: "Café" });
+
+    const outcome = await proposeExtractedNodes(repository, {
+      ideaId: idea.id,
+      ownerId: OWNER,
+      messages: [],
+      extraction: { nodes: [{ type: "revenue", content: "30 por mes" }] },
+    });
+
+    // A snapshot already contains the proposal, so removing it changes history.
+    await repository.saveVersion(idea.id);
+
+    await resolveProposal(repository, {
+      ideaId: idea.id,
+      nodeId: outcome.proposals[0].id,
+      decision: "discard",
+    });
+
+    const versions = await repository.listVersions(idea.id);
+    expect(versions).toHaveLength(2);
+    expect(versions[0].nodeCount).toBe(0);
+    expect(versions[1].nodeCount).toBe(1);
+  });
+
+  it("rejects a confirmed node that is no longer a proposal", async () => {
+    const repository = new InMemoryIdeaRepository();
+    const idea = await createIdea(repository, { ownerId: OWNER, title: "Café" });
+
+    const outcome = await proposeExtractedNodes(repository, {
+      ideaId: idea.id,
+      ownerId: OWNER,
+      messages: [],
+      extraction: { nodes: [{ type: "revenue", content: "30 por mes" }] },
+    });
+
+    await resolveProposal(repository, {
+      ideaId: idea.id,
+      nodeId: outcome.proposals[0].id,
+      decision: "accept",
+    });
+
+    await expect(
+      resolveProposal(repository, {
+        ideaId: idea.id,
+        nodeId: outcome.proposals[0].id,
+        decision: "accept",
+      }),
+    ).rejects.toBeInstanceOf(NotAProposalError);
+  });
+
+  it("rejects an edited node that is no longer a proposal", async () => {
+    const repository = new InMemoryIdeaRepository();
+    const idea = await createIdea(repository, { ownerId: OWNER, title: "Café" });
+
+    const outcome = await proposeExtractedNodes(repository, {
+      ideaId: idea.id,
+      ownerId: OWNER,
+      messages: [],
+      extraction: { nodes: [{ type: "revenue", content: "30 por mes" }] },
+    });
+
+    await resolveProposal(repository, {
+      ideaId: idea.id,
+      nodeId: outcome.proposals[0].id,
+      decision: "correct",
+      content: "40 por mes",
+    });
+
+    await expect(
+      resolveProposal(repository, {
+        ideaId: idea.id,
+        nodeId: outcome.proposals[0].id,
+        decision: "discard",
+      }),
+    ).rejects.toBeInstanceOf(NotAProposalError);
   });
 
   it("refuses to correct with an empty text", async () => {
