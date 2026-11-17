@@ -2,6 +2,7 @@ import { Hono } from "hono";
 
 import {
   createIdea,
+  listConversation,
   listIdeasWithProgress,
   loadIdeaGraphForOwner,
 } from "../application/use-cases";
@@ -10,6 +11,7 @@ import { createIdeaSchema, readJson } from "../lib/body";
 import { notFound } from "../lib/http-error";
 import { requiredParam } from "../lib/params";
 import { requireUser } from "../lib/session";
+import { postMessage } from "./messages";
 
 /**
  * Everything under `/api/ideas`.
@@ -65,7 +67,7 @@ ideas.get("/:id", async (context) => {
     throw notFound("No encontramos esa idea.");
   }
 
-  const messages = await messageRepository().listByIdea(id);
+  const messages = await listConversation(messageRepository(), id);
 
   return context.json({
     idea,
@@ -75,3 +77,6 @@ ideas.get("/:id", async (context) => {
     proposals: graph.nodes.filter((node) => node.source === "inferred"),
   });
 });
+
+/** One turn of the conversation. */
+ideas.post("/:id/messages", postMessage);

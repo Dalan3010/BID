@@ -6,3 +6,5 @@ export * from "./propose-node";
 export * from "./confirm-node";
 export * from "./edit-node";
 export * from "./get-coach-agenda";
+export * from "./build-coach-context";
+export * from "./send-message";
