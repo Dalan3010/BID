@@ -1,3 +1,4 @@
+import { NODE_TYPES } from "@bid/core";
 import type { Context } from "hono";
 import { z } from "zod";
 
@@ -23,6 +24,30 @@ export const proposalSchema = z.object({
   /** Only meaningful when the decision is `correct`. */
   content: z.string().trim().max(2000).optional(),
 });
+
+/** A dimension answered by hand, without AI. */
+export const createNodeSchema = z.object({
+  type: z.enum(NODE_TYPES),
+  content: z.string().trim().min(1).max(4000),
+});
+
+/** Rewrites the content of an already validated node. */
+export const editNodeSchema = z.object({
+  content: z.string().trim().min(1).max(4000),
+});
+
+/**
+ * Metadata changes for an idea.
+ *
+ * At least one field is required: an empty body would answer 200 without
+ * changing anything, which hides a client bug.
+ */
+export const updateIdeaSchema = z
+  .object({
+    title: z.string().trim().min(1).max(120).optional(),
+    summary: z.string().trim().max(2000).optional(),
+  })
+  .refine((body) => body.title !== undefined || body.summary !== undefined);
 
 /**
  * Reads and validates a JSON body.

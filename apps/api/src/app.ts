@@ -31,7 +31,7 @@ app.use(
     // An exact origin, never `*`: a wildcard cannot be combined with credentials.
     origin: webOrigin,
     credentials: true,
-    allowMethods: ["GET", "POST", "OPTIONS"],
+    allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["content-type"],
     maxAge: 600,
   }),

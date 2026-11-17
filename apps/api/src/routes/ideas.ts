@@ -2,18 +2,26 @@ import { Hono } from "hono";
 
 import {
   createIdea,
+  deleteIdea,
   listConversation,
   listIdeasWithProgress,
   loadIdeaGraphForOwner,
+  updateIdea,
 } from "../application/use-cases";
 import { ideaRepository, messageRepository } from "../infrastructure/container";
-import { createIdeaSchema, readJson } from "../lib/body";
+import {
+  createIdeaSchema,
+  readJson,
+  updateIdeaSchema,
+} from "../lib/body";
 import { notFound } from "../lib/http-error";
 import { requiredParam } from "../lib/params";
 import { requireUser } from "../lib/session";
 import { postExtraction } from "./extractions";
 import { postMessage } from "./messages";
+import { patchNode, postNode } from "./nodes";
 import { postProposal } from "./proposals";
+import { getVersionDiff, getVersions } from "./versions";
 
 /**
  * Everything under `/api/ideas`.
@@ -79,6 +87,40 @@ ideas.get("/:id", async (context) => {
     proposals: graph.nodes.filter((node) => node.source === "inferred"),
   });
 });
+
+/** Renames the idea or rewrites its summary; never touches the graph. */
+ideas.patch("/:id", async (context) => {
+  const user = await requireUser(context);
+  const id = requiredParam(context, "id");
+  const body = await readJson(context, updateIdeaSchema);
+
+  const idea = await updateIdea(ideaRepository(), {
+    ideaId: id,
+    ownerId: user.id,
+    title: body.title,
+    summary: body.summary,
+  });
+
+  return context.json({ idea });
+});
+
+/** Deletes the idea and everything hanging from it. */
+ideas.delete("/:id", async (context) => {
+  const user = await requireUser(context);
+  const id = requiredParam(context, "id");
+
+  await deleteIdea(ideaRepository(), { ideaId: id, ownerId: user.id });
+
+  return context.body(null, 204);
+});
+
+/** Manual authoring: answers an empty dimension, rewrites a validated node. */
+ideas.post("/:id/nodes", postNode);
+ideas.patch("/:id/nodes/:nodeId", patchNode);
+
+/** History: the snapshots and the difference between two of them. */
+ideas.get("/:id/versions", getVersions);
+ideas.get("/:id/versions/:version/diff", getVersionDiff);
 
 /** One turn of the conversation. */
 ideas.post("/:id/messages", postMessage);
