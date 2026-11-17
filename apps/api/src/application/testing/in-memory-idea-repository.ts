@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type {
   Idea,
+  IdeaPatch,
   IdeaRepository,
   IdeaVersion,
   IdeaVersionSummary,
@@ -27,6 +28,15 @@ export class InMemoryIdeaRepository implements IdeaRepository {
     return new Date().toISOString();
   }
 
+  private touchIdea(ideaId: string): void {
+    const idea = this.ideas.get(ideaId);
+    if (!idea) {
+      return;
+    }
+
+    this.ideas.set(ideaId, { ...idea, updatedAt: this.now() });
+  }
+
   async create(input: NewIdea): Promise<Idea> {
     const timestamp = this.now();
     const idea: Idea = {
@@ -50,6 +60,30 @@ export class InMemoryIdeaRepository implements IdeaRepository {
 
   async listByOwner(ownerId: string): Promise<Idea[]> {
     return [...this.ideas.values()].filter((idea) => idea.ownerId === ownerId);
+  }
+
+  async updateIdea(ideaId: string, patch: IdeaPatch): Promise<Idea | null> {
+    const current = this.ideas.get(ideaId);
+    if (!current) {
+      return null;
+    }
+
+    const updated: Idea = {
+      ...current,
+      title: patch.title ?? current.title,
+      summary: patch.summary ?? current.summary,
+      updatedAt: this.now(),
+    };
+
+    this.ideas.set(ideaId, updated);
+    return updated;
+  }
+
+  async deleteIdea(ideaId: string): Promise<boolean> {
+    const deleted = this.ideas.delete(ideaId);
+    this.nodes.delete(ideaId);
+    this.versions.delete(ideaId);
+    return deleted;
   }
 
   async loadGraph(ideaId: string): Promise<IdeaGraph | null> {
@@ -84,6 +118,10 @@ export class InMemoryIdeaRepository implements IdeaRepository {
     list.push(node);
     this.nodes.set(input.ideaId, list);
 
+    if (input.source !== "inferred") {
+      this.touchIdea(input.ideaId);
+    }
+
     return node;
   }
 
@@ -109,6 +147,7 @@ export class InMemoryIdeaRepository implements IdeaRepository {
     };
 
     list[index] = updated;
+    this.touchIdea(ideaId);
     return updated;
   }
 
@@ -120,6 +159,7 @@ export class InMemoryIdeaRepository implements IdeaRepository {
     }
 
     list.splice(index, 1);
+    this.touchIdea(ideaId);
     return true;
   }
 
@@ -158,5 +198,27 @@ export class InMemoryIdeaRepository implements IdeaRepository {
 
   async loadVersions(ideaId: string): Promise<IdeaVersion[]> {
     return [...(this.versions.get(ideaId) ?? [])].reverse();
+  }
+
+  async findVersion(
+    ideaId: string,
+    version: number,
+  ): Promise<IdeaVersion | null> {
+    return (
+      (this.versions.get(ideaId) ?? []).find(
+        (snapshot) => snapshot.version === version,
+      ) ?? null
+    );
+  }
+
+  async findLatestVersion(ideaId: string): Promise<IdeaVersion | null> {
+    const list = this.versions.get(ideaId) ?? [];
+    if (list.length === 0) {
+      return null;
+    }
+
+    return list.reduce((latest, snapshot) =>
+      snapshot.version > latest.version ? snapshot : latest,
+    );
   }
 }

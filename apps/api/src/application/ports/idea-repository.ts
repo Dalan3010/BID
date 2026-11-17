@@ -57,12 +57,23 @@ export interface NodePatch {
   readonly confidence?: number | null;
 }
 
+export interface IdeaPatch {
+  readonly title?: string;
+  readonly summary?: string;
+}
+
 export interface IdeaRepository {
   create(input: NewIdea): Promise<Idea>;
 
   findById(id: string): Promise<Idea | null>;
 
   listByOwner(ownerId: string): Promise<Idea[]>;
+
+  /** Returns `null` when the idea does not exist. */
+  updateIdea(ideaId: string, patch: IdeaPatch): Promise<Idea | null>;
+
+  /** Returns whether an idea row was deleted. */
+  deleteIdea(ideaId: string): Promise<boolean>;
 
   /** Returns `null` when the idea does not exist. */
   loadGraph(ideaId: string): Promise<IdeaGraph | null>;
@@ -87,4 +98,10 @@ export interface IdeaRepository {
 
   /** Full snapshots, newest first. Used by the account data export. */
   loadVersions(ideaId: string): Promise<IdeaVersion[]>;
+
+  /** Returns `null` when the idea or the version does not exist. */
+  findVersion(ideaId: string, version: number): Promise<IdeaVersion | null>;
+
+  /** Newest version by number, or `null` when there is none. */
+  findLatestVersion(ideaId: string): Promise<IdeaVersion | null>;
 }

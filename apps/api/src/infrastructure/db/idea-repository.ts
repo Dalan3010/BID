@@ -2,6 +2,7 @@ import { and, asc, desc, eq, max, sql } from "drizzle-orm";
 
 import type {
   Idea,
+  IdeaPatch,
   IdeaRepository,
   IdeaVersion,
   IdeaVersionSummary,
@@ -82,6 +83,31 @@ export class DrizzleIdeaRepository implements IdeaRepository {
     return rows.map(toIdea);
   }
 
+  async updateIdea(ideaId: string, patch: IdeaPatch): Promise<Idea | null> {
+    const [row] = await this.db
+      .update(ideas)
+      .set({
+        title: patch.title,
+        summary: patch.summary,
+        updatedAt: new Date(),
+      })
+      .where(eq(ideas.id, ideaId))
+      .returning();
+
+    return row ? toIdea(row) : null;
+  }
+
+  async deleteIdea(ideaId: string): Promise<boolean> {
+    // Nodes, messages and versions all declare `onDelete: "cascade"`, so the
+    // database removes the children with their idea.
+    const deleted = await this.db
+      .delete(ideas)
+      .where(eq(ideas.id, ideaId))
+      .returning({ id: ideas.id });
+
+    return deleted.length > 0;
+  }
+
   async loadGraph(ideaId: string): Promise<IdeaGraph | null> {
     const idea = await this.findById(ideaId);
     if (!idea) {
@@ -108,19 +134,30 @@ export class DrizzleIdeaRepository implements IdeaRepository {
   }
 
   async addNode(input: NewNode): Promise<IdeaNode> {
-    const [row] = await this.db
-      .insert(nodes)
-      .values({
-        ideaId: input.ideaId,
-        type: input.type,
-        content: input.content,
-        source: input.source,
-        messageId: input.messageId ?? null,
-        confidence: input.confidence ?? null,
-      })
-      .returning();
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(nodes)
+        .values({
+          ideaId: input.ideaId,
+          type: input.type,
+          content: input.content,
+          source: input.source,
+          messageId: input.messageId ?? null,
+          confidence: input.confidence ?? null,
+        })
+        .returning();
 
-    return toIdeaNode(row);
+      // Inferred nodes arrive in bulk while a proposal is being built; they
+      // must not make the idea look freshly edited.
+      if (input.source !== "inferred") {
+        await tx
+          .update(ideas)
+          .set({ updatedAt: new Date() })
+          .where(eq(ideas.id, input.ideaId));
+      }
+
+      return toIdeaNode(row);
+    });
   }
 
   async updateNode(
@@ -128,27 +165,49 @@ export class DrizzleIdeaRepository implements IdeaRepository {
     nodeId: string,
     patch: NodePatch,
   ): Promise<IdeaNode | null> {
-    const [row] = await this.db
-      .update(nodes)
-      .set({
-        content: patch.content,
-        source: patch.source,
-        confidence: patch.confidence,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(nodes.ideaId, ideaId), eq(nodes.id, nodeId)))
-      .returning();
+    return this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(nodes)
+        .set({
+          content: patch.content,
+          source: patch.source,
+          confidence: patch.confidence,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(nodes.ideaId, ideaId), eq(nodes.id, nodeId)))
+        .returning();
 
-    return row ? toIdeaNode(row) : null;
+      if (!row) {
+        return null;
+      }
+
+      await tx
+        .update(ideas)
+        .set({ updatedAt: new Date() })
+        .where(eq(ideas.id, ideaId));
+
+      return toIdeaNode(row);
+    });
   }
 
   async removeNode(ideaId: string, nodeId: string): Promise<boolean> {
-    const removed = await this.db
-      .delete(nodes)
-      .where(and(eq(nodes.ideaId, ideaId), eq(nodes.id, nodeId)))
-      .returning({ id: nodes.id });
+    return this.db.transaction(async (tx) => {
+      const removed = await tx
+        .delete(nodes)
+        .where(and(eq(nodes.ideaId, ideaId), eq(nodes.id, nodeId)))
+        .returning({ id: nodes.id });
 
-    return removed.length > 0;
+      if (removed.length === 0) {
+        return false;
+      }
+
+      await tx
+        .update(ideas)
+        .set({ updatedAt: new Date() })
+        .where(eq(ideas.id, ideaId));
+
+      return true;
+    });
   }
 
   async saveVersion(ideaId: string): Promise<IdeaVersionSummary | null> {
@@ -206,5 +265,50 @@ export class DrizzleIdeaRepository implements IdeaRepository {
       createdAt: row.createdAt.toISOString(),
       graph: row.graph,
     }));
+  }
+
+  async findVersion(
+    ideaId: string,
+    version: number,
+  ): Promise<IdeaVersion | null> {
+    const [row] = await this.db
+      .select()
+      .from(ideaVersions)
+      .where(
+        and(
+          eq(ideaVersions.ideaId, ideaId),
+          eq(ideaVersions.version, version),
+        ),
+      )
+      .limit(1);
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      version: row.version,
+      createdAt: row.createdAt.toISOString(),
+      graph: row.graph,
+    };
+  }
+
+  async findLatestVersion(ideaId: string): Promise<IdeaVersion | null> {
+    const [row] = await this.db
+      .select()
+      .from(ideaVersions)
+      .where(eq(ideaVersions.ideaId, ideaId))
+      .orderBy(desc(ideaVersions.version))
+      .limit(1);
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      version: row.version,
+      createdAt: row.createdAt.toISOString(),
+      graph: row.graph,
+    };
   }
 }
