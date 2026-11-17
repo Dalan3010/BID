@@ -5,6 +5,7 @@ import { getAuth } from "./infrastructure/auth/auth";
 import { statusFor } from "./lib/errors";
 import { HttpError } from "./lib/http-error";
 import { account } from "./routes/account";
+import { ideas } from "./routes/ideas";
 
 /**
  * The HTTP application.
@@ -52,6 +53,7 @@ app.on(["GET", "POST"], "/api/auth/*", (context) =>
   getAuth().handler(context.req.raw),
 );
 
+app.route("/api/ideas", ideas);
 app.route("/api/account", account);
 
 function errorToResponse(error: unknown): Response {
