@@ -7,28 +7,33 @@ El usuario conversa en lenguaje natural. El sistema extrae estructura de esa
 conversación y la proyecta en visualizaciones que muestran qué tan sólida está
 la idea y qué falta.
 
-> **Estado:** Fase 5. Este repositorio publica la parte cliente del producto: el
-> dominio compartido y la aplicación Next.js, implementados y testeados. El
-> cliente habla por HTTP con la API del proyecto, que no forma parte de este
-> repositorio.
+> **Estado:** Fase 5. Dominio, API y cliente están implementados y testeados:
+> persistencia, autenticación, las dos vistas del grafo, el chat con streaming y
+> la extracción de la conversación a nodos. Falta el historial de versiones y el
+> modo demo.
 
 ## Stack
 
 | Capa | Tecnología |
 |---|---|
 | Dominio compartido | TypeScript puro (`@bid/core`), sin dependencias de runtime |
+| API | Hono + `@hono/node-server` |
 | Cliente | Next.js 16 (App Router) + TypeScript |
 | Estilos | Tailwind CSS 4 |
 | Animación | Anime.js 4 |
-| Tests | Vitest |
+| Tests | Vitest, por paquete |
+| Base de datos | Postgres 17 + Drizzle ORM |
+| Autenticación | Better Auth |
 | Vista árbol | React Flow (@xyflow/react) |
+| IA | AI SDK · guion por defecto, proveedor opcional |
 
-## Dominio y cliente
+## Dominio, API y cliente
 
-El repositorio es un **workspace pnpm** con dos paquetes:
+El repositorio es un **workspace pnpm** con tres paquetes:
 
 ```
 packages/core/   Dominio puro: modelo canónico, merge y proyecciones
+apps/api/        Hono. Es el único que habla con Postgres y con Better Auth
 Frontend/        Next.js. Solo cliente: no toca la base ni importa la API
 ```
 
@@ -53,23 +58,33 @@ Después:
 ```bash
 pnpm install
 cp .env.example .env.local
-pnpm dev                  # cliente en http://localhost:3000
+# En .env.local: BETTER_AUTH_SECRET=$(openssl rand -base64 32)
+docker compose up -d      # Postgres en localhost:5432
+pnpm db:migrate
+pnpm db:seed              # idea demo + cuenta demo@bid.local / demo1234
+pnpm dev                  # API en :3001 y cliente en :3000
 ```
 
-El cliente necesita una API escuchando en `NEXT_PUBLIC_API_URL` (por defecto
-`http://localhost:3001`).
+`pnpm dev` levanta los dos procesos en paralelo. El cliente abre en
+<http://localhost:3000> y la API escucha en <http://localhost:3001>.
 
-Hay **un solo `.env.local`**, en la raíz: `Frontend/next.config.ts` lo carga con
-`loadEnvConfig`, así que `NEXT_PUBLIC_API_URL` se declara una vez.
+Hay **un solo `.env.local`**, en la raíz, compartido por los dos: la API lo carga
+con `tsx --env-file-if-exists` y el cliente con `loadEnvConfig` en
+`Frontend/next.config.ts`. Así el `DATABASE_URL`, el secreto y el puerto se
+declaran una vez.
 
 | Script | Qué hace |
 |---|---|
-| `pnpm dev` | Levanta el cliente |
+| `pnpm dev` | Levanta API y cliente en paralelo |
 | `pnpm build` | Build de producción del cliente |
 | `pnpm start` | Sirve el build del cliente |
 | `pnpm lint` | ESLint (solo `Frontend`) |
-| `pnpm typecheck` | TypeScript sin emitir, en los dos paquetes |
-| `pnpm test` | Tests una vez |
+| `pnpm typecheck` | TypeScript sin emitir, en los tres paquetes |
+| `pnpm test` | Tests una vez (sin base de datos) |
+| `pnpm test:watch` | Tests de la API en modo watch |
+| `pnpm db:generate` | Genera una migración desde el esquema |
+| `pnpm db:migrate` | Aplica las migraciones pendientes |
+| `pnpm db:seed` | Siembra la idea demo y su cuenta |
 | `pnpm mock:api` | API simulada en `http://localhost:3001` (solo para ver la UI) |
 | `pnpm ui` | API simulada + cliente, para revisar la interfaz de punta a punta |
 
@@ -78,8 +93,8 @@ Hay **un solo `.env.local`**, en la raíz: `Frontend/next.config.ts` lo carga co
 
 ## Ver la UI sin la API
 
-La API del producto no vive en este repositorio. Para revisar la interfaz igual
-hay una API simulada, [`mock/server.mjs`](mock/server.mjs):
+La API vive en `apps/api`. Para revisar la interfaz sin levantar Postgres ni el
+servidor real hay una API simulada, [`mock/server.mjs`](mock/server.mjs):
 
 ```bash
 pnpm ui          # cliente en :3000 y mock en :3001
@@ -104,6 +119,14 @@ packages/core/src/
 ├── idea/               Modelo canónico, merge y proyecciones (puro)
 └── chat/               Tipos de la conversación
 
+apps/api/
+├── drizzle/            Migraciones SQL versionadas
+└── src/
+    ├── app.ts          App Hono: CORS, errores y rutas
+    ├── routes/         ideas, messages, extractions, proposals, account, demo
+    ├── application/    Casos de uso y puertos
+    └── infrastructure/ Auth (Better Auth), base de datos (Drizzle) e IA
+
 Frontend/src/
 ├── app/                Rutas: portada, (auth), (app)
 ├── components/         ui, motion (Anime.js), navegación y una carpeta por pantalla
@@ -124,6 +147,8 @@ animaciones y limitaciones del backend encontradas al integrarlo.
   requisitos, decisiones de producto y alcance.
 - [`docs/arquitectura.md`](docs/arquitectura.md) — capas, patrón de diseño y
   convenciones.
+- [`docs/HANDOVER/`](docs/HANDOVER/00_INDICE.md) — onboarding, contratos de la
+  API, datos, validaciones, despliegue y checklist de entrega.
 - [`docs/memoria-del-proyecto.md`](docs/memoria-del-proyecto.md) — registro de
   decisiones y descubrimientos exportado desde Engram.
 - [`docs/engram/`](docs/engram/README.md) — export nativo para importar la
