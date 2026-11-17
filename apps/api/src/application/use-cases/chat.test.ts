@@ -156,7 +156,7 @@ describe("sendMessage", () => {
       type: "problem",
       content: "Offices lack good coffee",
     });
-    await confirmNode(ideas, { ideaId, nodeId: node!.id });
+    await confirmNode(ideas, { ideaId, nodeId: node!.id, ownerId: OWNER });
 
     await sendMessage(
       { ideas, messages, model },

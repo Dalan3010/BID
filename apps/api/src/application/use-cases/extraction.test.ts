@@ -152,7 +152,11 @@ describe("proposeExtractedNodes", () => {
     });
 
     const graph = await repository.loadGraph(idea.id);
-    await confirmNode(repository, { ideaId: idea.id, nodeId: graph!.nodes[0].id });
+    await confirmNode(repository, {
+      ideaId: idea.id,
+      nodeId: graph!.nodes[0].id,
+      ownerId: OWNER,
+    });
 
     const outcome = await proposeExtractedNodes(repository, {
       ideaId: idea.id,

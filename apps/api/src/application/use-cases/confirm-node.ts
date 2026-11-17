@@ -1,10 +1,15 @@
 import { canTransition, type IdeaNode } from "@bid/core";
-import { NodeNotFoundError, SourceTransitionError } from "../errors";
+import {
+  IdeaNotFoundError,
+  NodeNotFoundError,
+  SourceTransitionError,
+} from "../errors";
 import type { IdeaRepository } from "../ports/idea-repository";
 
 export interface ConfirmNodeInput {
   readonly ideaId: string;
   readonly nodeId: string;
+  readonly ownerId: string;
 }
 
 /**
@@ -18,6 +23,12 @@ export async function confirmNode(
   repository: IdeaRepository,
   input: ConfirmNodeInput,
 ): Promise<IdeaNode> {
+  const idea = await repository.findById(input.ideaId);
+
+  if (!idea || idea.ownerId !== input.ownerId) {
+    throw new IdeaNotFoundError(input.ideaId);
+  }
+
   const node = await repository.findNode(input.ideaId, input.nodeId);
   if (!node) {
     throw new NodeNotFoundError(input.nodeId);
@@ -36,6 +47,8 @@ export async function confirmNode(
   if (!updated) {
     throw new NodeNotFoundError(input.nodeId);
   }
+
+  await repository.saveVersion(input.ideaId);
 
   return updated;
 }

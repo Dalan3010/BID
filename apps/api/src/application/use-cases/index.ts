@@ -1,4 +1,7 @@
 export * from "./create-idea";
+export * from "./create-manual-node";
+export * from "./update-idea";
+export * from "./delete-idea";
 export * from "./load-idea-graph";
 export * from "./load-idea-graph-for-owner";
 export * from "./list-ideas-with-progress";
