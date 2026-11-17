@@ -47,6 +47,7 @@
 @theme {
   /* Palette: deep blacks, warm greys, one bronze accent used sparingly. */
   --color-ink-950: #0f0f0f; /* page background */
+  --color-ink-925: #121212; /* well cut into a raised card: deeper than ink-900 */
   --color-ink-900: #161616; /* raised surfaces (clay panels) */
   --color-ink-850: #1b1b1b; /* top face of clay gradients, hover */
   --color-ink-800: #1f1f1f; /* sunken clay: inputs, wells */
@@ -215,6 +216,57 @@
   background:
     radial-gradient(120% 90% at 50% 40%, transparent 30%, rgb(15 15 15 / 0.75) 100%),
     linear-gradient(180deg, rgb(15 15 15 / 0.55) 0%, rgb(15 15 15 / 0.1) 35%, rgb(15 15 15 / 0.92) 100%);
+}
+
+/*
+ * Material samples for project thumbnails.
+ *
+ * An idea has no photograph of its own, so its thumbnail is a material swatch:
+ * a low-contrast technical texture drawn with the paper token, so it sits on
+ * any black. Four samples, deterministic per idea (see `lib/project-thumbnail`).
+ */
+
+/* Dots: fine engineering paper. */
+@utility material-dots {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    color-mix(in srgb, var(--color-paper) 16%, transparent) 1px,
+    transparent 0
+  );
+  background-size: 13px 13px;
+}
+
+/* Rules: a ledger page. */
+@utility material-rules {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--color-paper) 10%, transparent) 0 1px,
+    transparent 1px 9px
+  );
+}
+
+/* Crosshair grid: a technical drawing sheet. */
+@utility material-grid {
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-paper) 8%, transparent) 0 1px,
+      transparent 1px 32px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--color-paper) 8%, transparent) 0 1px,
+      transparent 1px 32px
+    );
+}
+
+/* Diagonal hatch: raw graphite. */
+@utility material-diagonal {
+  background-image: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-paper) 9%, transparent) 0 1px,
+    transparent 1px 7px
+  );
 }
 
 /* -------------------------------------------------------------------------- */

@@ -161,13 +161,13 @@ export function StudioView() {
             {visible.length > 0 ? (
               // `deps` uses the total, not the filtered list: re-animating the
               // whole list on every keystroke would be noise.
-              <Reveal as="ol" className="border-t border-line" deps={[ideas.length]}>
+              <Reveal as="ol" className="flex flex-col gap-4 md:gap-5" deps={[ideas.length]}>
                 {visible.map((entry, index) => (
                   <IdeaEntry key={entry.idea.id} entry={entry} index={index} />
                 ))}
               </Reveal>
             ) : (
-              <div className="flex flex-col items-start gap-4 border-t border-line py-14">
+              <div className="flex max-w-2xl flex-col items-start gap-4 rounded-clay-lg border border-dashed border-line-strong px-6 py-10 md:px-8">
                 <p className="font-serif text-2xl text-paper">Ninguna idea coincide.</p>
                 <p className="text-sm text-stone">Prueba con otras palabras o cambia el filtro.</p>
                 <Button
@@ -193,11 +193,14 @@ export function StudioView() {
 
 function StudioSkeleton() {
   return (
-    <div className="border-t border-line">
+    <div className="flex flex-col gap-4 md:gap-5">
       <LoadingStatus label="Cargando tus ideas…" />
       {[0, 1].map((row) => (
-        <div key={row} className="grid gap-6 border-b border-line py-10 md:grid-cols-12 md:gap-8">
-          <Skeleton className="aspect-[4/3] md:col-span-4 lg:col-span-3" />
+        <div
+          key={row}
+          className="grid gap-6 rounded-clay-lg border border-paper/[0.06] bg-ink-900 p-5 shadow-clay-panel md:grid-cols-12 md:gap-8 md:p-6"
+        >
+          <Skeleton className="aspect-[4/3] rounded-clay md:col-span-4 lg:col-span-3" />
           <div className="flex flex-col gap-4 md:col-span-5">
             <Skeleton className="h-8 w-2/3" />
             <SkeletonText lines={3} />

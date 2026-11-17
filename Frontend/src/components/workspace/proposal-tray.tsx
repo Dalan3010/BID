@@ -14,9 +14,9 @@ import type { ProposalRequest } from "./use-workspace";
  * "Lo que hemos identificado" — the space where AI proposals wait.
  *
  * It is docked above the composer, where the eye already is after the coach
- * answers, and it is visually distinct from the conversation: a bordered
- * panel with its own heading. It collapses to a single line so it never
- * crowds the transcript:
+ * answers, and it is visually distinct from the conversation: a floating clay
+ * panel (`shadow-clay-panel`) with an amber hairline and its own heading. It
+ * collapses to a single line so it never crowds the transcript:
  *
  * - Desktop (≥ 1024 px): starts open and opens itself when new proposals
  *   arrive.
@@ -90,7 +90,7 @@ export function ProposalTray({
           event.currentTarget.querySelector<HTMLButtonElement>("button[aria-expanded]")?.focus();
         }
       }}
-      className="mx-gutter mb-3 border border-amber/30 bg-ink-900 shadow-float focus:outline-none lg:mx-10"
+      className="mx-gutter mb-3 overflow-hidden rounded-clay-lg border border-amber/25 bg-ink-900 shadow-clay-panel focus:outline-none lg:mx-10"
     >
       <h2 id={`${id}-title`}>
         <button
@@ -136,7 +136,7 @@ export function ProposalTray({
             </Button>
           ) : null}
         </div>
-        <ul className="max-h-[min(22rem,40dvh)] overflow-y-auto overscroll-contain px-4 sm:px-5">
+        <ul className="flex max-h-[min(22rem,40dvh)] flex-col gap-3 overflow-y-auto overscroll-contain px-4 pt-4 pb-4 sm:px-5">
           {proposals.map((node, index) => (
             <ProposalCard
               key={node.id}

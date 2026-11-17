@@ -4,6 +4,7 @@ import type { ChatMessage, Idea, IdeaNode, NodeType } from "@bid/core";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { Attachment } from "@/lib/attachments";
 import {
   ApiError,
   errorMessage,
@@ -41,12 +42,30 @@ import { readTextStream } from "@/lib/stream";
 /** How long a discard can be undone before the request is sent. */
 export const DISCARD_DELAY_MS = 5000;
 
+/** How long the local attachment turn "thinks" before the canned answer. */
+const ATTACHMENT_REPLY_DELAY_MS = 900;
+
+/**
+ * Answer of the local attachment turn.
+ *
+ * Attachments have no endpoint yet (see the `send` comment), so the text says
+ * what is true today instead of pretending the coach read the file.
+ */
+function simulatedAttachmentReply(name: string): string {
+  return `He recibido «${name}». Todavía no puedo leerlo: los archivos aún no salen de tu navegador. Cuando conectemos la subida, podré revisarlo y proponerte nodos del plan.`;
+}
+
 /** What the conversation is doing right now. */
 export type TurnPhase = "idle" | "sending" | "streaming" | "extracting";
 
 /** A message shown in the conversation; `pending` ones are not stored yet. */
 export interface ConversationMessage extends Pick<ChatMessage, "id" | "role" | "content" | "createdAt"> {
   readonly pending?: boolean;
+  /**
+   * Image or PDF sent with this message. Local for now: the API has no upload
+   * endpoint, so only the messages of the simulated turn carry one.
+   */
+  readonly attachment?: Attachment;
 }
 
 /** A notice about the turn (not tied to a field). */
@@ -95,11 +114,21 @@ export function useWorkspace(ideaId: string) {
   /** The dimension that just changed, so the plan can light it briefly. */
   const [highlight, setHighlight] = useState<{ type: NodeType; at: number } | null>(null);
 
+  /** Pending "thinking" timer of a local attachment turn. */
+  const attachmentTimer = useRef<{ id: number; resolve: () => void } | null>(null);
+
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
+      // Leaving the workspace must not leave the turn hanging on a timer.
+      const pending = attachmentTimer.current;
+      if (pending) {
+        window.clearTimeout(pending.id);
+        pending.resolve();
+        attachmentTimer.current = null;
+      }
     };
   }, []);
 
@@ -187,9 +216,58 @@ export function useWorkspace(ideaId: string) {
    *   forget the text), `false` when it did not (the text is handed back).
    */
   const send = useCallback(
-    async (rawContent: string): Promise<boolean> => {
+    async (rawContent: string, attachment: Attachment | null = null): Promise<boolean> => {
       const content = rawContent.trim();
-      if (!content || phase !== "idle") return false;
+      // A file alone is a message; plain text still needs something to say.
+      if ((!content && !attachment) || phase !== "idle") return false;
+
+      // TODO (Backend): Enviar este objeto 'file' junto con el mensaje a la API.
+      //
+      // Attachments run locally: there is no upload endpoint yet.
+      //
+      // BACKEND: replace this block with the multipart call the contract
+      // already has room for —
+      //   `POST /api/ideas/:id/messages` (multipart/form-data) with `content`
+      //   and the file as `files[]` —
+      // and let the turn fall through to the streaming path below, so the
+      // coach answers exactly like it does for a text-only message. The
+      // optimistic bubble already renders `attachment`; only the transport
+      // is missing.
+      if (attachment) {
+        const now = new Date().toISOString();
+        setNotice(null);
+        setPhase("sending");
+        setMessages((current) => [
+          ...current,
+          { id: `local-user-${now}`, role: "user", content, createdAt: now, attachment },
+        ]);
+
+        await new Promise<void>((resolve) => {
+          const id = window.setTimeout(() => {
+            attachmentTimer.current = null;
+            resolve();
+          }, ATTACHMENT_REPLY_DELAY_MS);
+
+          attachmentTimer.current = { id, resolve };
+        });
+
+        // Unmounted: the turn was still accepted, nothing else to show.
+        if (!mounted.current) return true;
+
+        setMessages((current) => [
+          ...current,
+          {
+            id: `local-coach-${now}`,
+            role: "assistant",
+            content: simulatedAttachmentReply(attachment.name),
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+        setPhase("idle");
+        // These messages live only in the browser: the next text-only turn
+        // reloads the conversation from the API and replaces them.
+        return true;
+      }
 
       setNotice(null);
       setPhase("sending");

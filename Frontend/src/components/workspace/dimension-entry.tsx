@@ -6,8 +6,25 @@ import { useRef } from "react";
 import { useAnimeScope } from "@/components/motion/use-anime-scope";
 import { SourceTag, StatusTag } from "@/components/ui/status-tag";
 import { cn } from "@/lib/cn";
-import { dimensionIndex, type DimensionView } from "@/lib/dimensions";
+import { dimensionIndex, type DimensionStatus, type DimensionView } from "@/lib/dimensions";
 import { formatRelative } from "@/lib/format";
+
+/**
+ * The relief of each milestone card, by state.
+ *
+ * A validated dimension is a solid block of progress the person built: raised,
+ * clay top face and a sage edge, the colour the plan already uses for
+ * "validated". A pending one is raised too but edged in amber, and dotted
+ * because it still waits for a decision. An open one is a pit: sunken and
+ * dotted, because nothing has been placed in it yet — the same solid/dotted
+ * language the tree uses.
+ */
+const CARD: Record<DimensionStatus, string> = {
+  validated:
+    "border-sage/25 bg-[linear-gradient(180deg,var(--color-ink-850)_0%,var(--color-ink-900)_62%)] shadow-clay print:bg-none",
+  pending: "border-dotted border-amber/35 bg-ink-900 shadow-clay",
+  open: "border-dotted border-line-strong bg-ink-900 shadow-clay-inset",
+};
 
 /**
  * One of the ten dimensions in the plan.
@@ -18,8 +35,8 @@ import { formatRelative } from "@/lib/format";
  *   the proposal waiting in "Lo que hemos identificado".
  * - open      → the question the dimension answers, in a muted voice.
  *
- * When the dimension has just been validated (`highlightAt` changes), it glows
- * briefly with the bronze accent.
+ * When the dimension has just been validated (`highlightAt` changes), a bronze
+ * wash fades over the card (an overlay, so the card's own fill survives).
  */
 export function DimensionEntry({
   view,
@@ -44,11 +61,9 @@ export function DimensionEntry({
     () => {
       if (!highlightAt || !root.current) return;
       root.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      animate(root.current, {
-        backgroundColor: ["rgba(167,120,80,0.16)", "rgba(167,120,80,0)"],
-        duration: 2400,
-        ease: "outQuad",
-      });
+      const wash = root.current.querySelector<HTMLElement>("[data-highlight]");
+      if (!wash) return;
+      animate(wash, { opacity: [1, 0], duration: 2400, ease: "outQuad" });
     },
     [highlightAt],
   );
@@ -59,10 +74,17 @@ export function DimensionEntry({
     <li
       ref={root}
       className={cn(
-        "relative grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 border-b border-line py-5 pr-1 break-inside-avoid",
-        status === "open" && "opacity-80",
+        "relative isolate grid grid-cols-[2.25rem_minmax(0,1fr)] gap-x-3 overflow-hidden rounded-clay-lg border p-4 break-inside-avoid",
+        CARD[status],
       )}
     >
+      {/* The "just updated" wash. Decorative only; the card fill stays intact. */}
+      <span
+        aria-hidden="true"
+        data-highlight
+        className="pointer-events-none absolute inset-0 -z-10 rounded-clay-lg bg-bronze/20 opacity-0"
+      />
+
       <span className="eyebrow pt-1.5 text-stone">{dimensionIndex(view.type)}</span>
 
       <div className="flex min-w-0 flex-col gap-3">

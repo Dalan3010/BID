@@ -93,7 +93,10 @@ export function PlanPanel({
         ) : null}
       </header>
 
-      <ol aria-label="Las diez dimensiones" className="px-gutter lg:px-8 print:px-0">
+      <ol
+        aria-label="Las diez dimensiones"
+        className="flex flex-col gap-3 px-gutter pb-2 lg:px-8 print:gap-0 print:px-0"
+      >
         {views.map((view) => (
           <DimensionEntry
             key={view.type}

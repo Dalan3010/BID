@@ -8,7 +8,7 @@ import { ArrowIcon, Button } from "@/components/ui/button";
  */
 export function StudioEmpty({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="grid overflow-hidden border border-line md:grid-cols-2">
+    <div className="grid overflow-hidden rounded-clay-lg border border-paper/[0.06] bg-ink-900 shadow-clay-panel md:grid-cols-2">
       <div className="relative min-h-60 md:min-h-[26rem]">
         <Image
           src="/images/forest.jpg"
