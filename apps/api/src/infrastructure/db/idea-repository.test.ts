@@ -55,7 +55,9 @@ describe.skipIf(!connectionString)("DrizzleIdeaRepository", () => {
 
   async function ageIdea(ideaId: string): Promise<number> {
     const past = new Date(Date.now() - 60_000);
-    await sql`UPDATE ideas SET updated_at = ${past} WHERE id = ${ideaId}`;
+    // postgres-js has no serializer for `Date`: send the ISO text and let the
+    // cast parse it, otherwise the driver throws before reaching the server.
+    await sql`UPDATE ideas SET updated_at = ${past.toISOString()}::timestamptz WHERE id = ${ideaId}`;
     return past.getTime();
   }
 
