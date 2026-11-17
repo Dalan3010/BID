@@ -1,12 +1,14 @@
 # pnpm settings (pnpm 10+ reads configuration from this file, not package.json).
 #
-# The repository is a workspace: `packages/core` is the pure domain and
-# `Frontend` is the client.
+# The repository is a workspace: `packages/core` is the pure domain, `apps/api`
+# is the server and `Frontend` is the client.
 packages:
+  - "apps/*"
   - "Frontend"
   - "packages/*"
 
-# esbuild ships a native binary and needs its install script to place it.
+# esbuild ships a native binary and needs its install script to place it. It is a
+# transitive dependency of `tsx`, which runs the database scripts.
 allowBuilds:
   esbuild: true
 

@@ -4,12 +4,16 @@
   "private": true,
   "packageManager": "pnpm@11.21.0",
   "scripts": {
-    "dev": "pnpm --filter @bid/web dev",
+    "dev": "pnpm -r --parallel dev",
     "build": "pnpm --filter @bid/web build",
     "start": "pnpm --filter @bid/web start",
-    "lint": "pnpm --filter @bid/web lint",
+    "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
+    "test:watch": "pnpm --filter @bid/api test:watch",
+    "db:generate": "pnpm --filter @bid/api db:generate",
+    "db:migrate": "pnpm --filter @bid/api db:migrate",
+    "db:seed": "pnpm --filter @bid/api db:seed",
     "mock:api": "node mock/server.mjs",
     "ui": "node mock/server.mjs & pnpm --filter @bid/web dev"
   }

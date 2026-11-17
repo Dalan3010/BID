@@ -1,0 +1,31 @@
+# Local Postgres for development and for running the seed.
+#
+#   docker compose up -d
+#   pnpm db:migrate
+#   pnpm db:seed
+#
+# The credentials are deliberately trivial: this container is for local
+# development only and must never be used outside `localhost`.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: bid-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bid
+      POSTGRES_PASSWORD: bid
+      POSTGRES_DB: bid
+    ports:
+      - "5432:5432"
+    volumes:
+      - bid-postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/10-bid-test.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bid -d bid"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  bid-postgres-data:
