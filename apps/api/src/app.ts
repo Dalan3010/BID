@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { getAuth } from "./infrastructure/auth/auth";
 import { statusFor } from "./lib/errors";
 import { HttpError } from "./lib/http-error";
+import { account } from "./routes/account";
 
 /**
  * The HTTP application.
@@ -50,6 +51,8 @@ app.get("/api/health", (context) => context.json({ ok: true }));
 app.on(["GET", "POST"], "/api/auth/*", (context) =>
   getAuth().handler(context.req.raw),
 );
+
+app.route("/api/account", account);
 
 function errorToResponse(error: unknown): Response {
   if (error instanceof HttpError) {
