@@ -53,17 +53,18 @@ Out:
 
 ## Tasks
 
-- [ ] T1 — Core: add `diffGraphs` projection and tests.
-- [ ] T2 — Repository: add `updateIdea`, `deleteIdea`, `findVersion`,
+- [x] T1 — Core: add `diffGraphs` projection and tests. (8671879)
+- [x] T2 — Repository: add `updateIdea`, `deleteIdea`, `findVersion`,
       `findLatestVersion`; touch `ideas.updated_at` on node mutations; mirror in
-      the in-memory repository.
-- [ ] T3 — Errors: add `DimensionNotEmptyError`, `NotAProposalError`,
-      `VersionNotFoundError` and their HTTP mapping.
-- [ ] T4 — Use cases: `createManualNode`, `updateIdea`, `deleteIdea`,
+      the in-memory repository. (4cbff6b)
+- [x] T3 — Errors: add `DimensionNotEmptyError`, `NotAProposalError`,
+      `VersionNotFoundError` and their HTTP mapping. (6d25e89)
+- [x] T4 — Use cases: `createManualNode`, `updateIdea`, `deleteIdea`,
       `listIdeaVersions`, `diffIdeaVersion`; make `editNode`, `confirmNode` and
       `resolveProposal` snapshot and enforce owner/provenance rules.
-- [ ] T5 — Routes: `POST/PATCH` nodes, `PATCH/DELETE` idea, `GET` versions and
-      version diff; Zod schemas; PATCH/DELETE in CORS.
+      (4439dd7, 37ba37b)
+- [x] T5 — Routes: `POST/PATCH` nodes, `PATCH/DELETE` idea, `GET` versions and
+      version diff; Zod schemas; PATCH/DELETE in CORS. (b92f247)
 - [ ] T6 — Frontend API client: PATCH/DELETE support and the new methods.
 - [ ] T7 — UI: node editor dialog, edit-idea dialog, version history, and
       integration in `use-workspace`, `plan-panel`, `dimension-entry`,
@@ -117,3 +118,34 @@ DB-gated suites need `TEST_DATABASE_URL` and a running Postgres.
 
 - 2026-11-16: branch created; plan written. Engram mirror pending (ambiguous
   project from `/home/kom/Proyectos`).
+- 2026-11-17: T5 done in `b92f247`. New `routes/nodes.ts` and `routes/versions.ts`;
+  `PATCH/DELETE /:id` on the ideas router; `createNodeSchema`, `editNodeSchema`,
+  `updateIdeaSchema`; `requiredIntParam` / `optionalIntQuery` answer 400 for a
+  non-positive version; CORS now allows PATCH and DELETE. 16 route tests run the
+  real Hono app against `InMemoryIdeaRepository`, no database.
+  Verification: `pnpm --filter @bid/api typecheck` clean,
+  `pnpm --filter @bid/api test` 131 passed / 14 skipped,
+  `pnpm typecheck` clean across core, api and Frontend.
+- 2026-11-17: T1–T4 were already committed and are now checked off with their
+  commits; the plan's list had drifted behind the branch.
+- 2026-11-17: route decision — the API answers `{ node }`, `{ idea }`,
+  `{ versions }` and `{ diff }`, and `DELETE` answers 204 with no body, so the
+  client never parses a payload it cannot use.
+- 2026-11-17: full backend stack running against the compose Postgres
+  (`postgres:17-alpine`, host 5432, databases `bid` and `bid_test`), migrations
+  and seed applied, `pnpm --filter @bid/api dev` on 3001 and Next on 3000.
+- 2026-11-17: the DB-gated suites had never actually run; they exposed a
+  `postgres-js` serialization bug in a test helper (`Date` passed as a
+  parameter). Fixed in `e27ee28` by sending ISO text with a `timestamptz` cast.
+  With `TEST_DATABASE_URL` set, the API suite is 145/145 green, none skipped.
+
+## Delivery state
+
+- Branch `feat/backend-completion` vs `backend`: 31 files, 2452 insertions,
+  51 deletions. The 400-line review budget is exceeded on purpose: the plan
+  states one `backend` -> `main` PR, opened by the user, with this branch merged
+  into `backend` `--no-ff`. Delivery strategy: `exception-ok` (explicit in the
+  plan, not a silent override).
+- Next slice boundary is the whole branch; there is no partial PR planned.
+- Per-task sizes above 400 lines were accepted because each is one coherent
+  behavior with its tests; no artificial splitting.
