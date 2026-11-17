@@ -5,6 +5,7 @@ import { getAuth } from "./infrastructure/auth/auth";
 import { statusFor } from "./lib/errors";
 import { HttpError } from "./lib/http-error";
 import { account } from "./routes/account";
+import { demo } from "./routes/demo";
 import { ideas } from "./routes/ideas";
 
 /**
@@ -55,6 +56,7 @@ app.on(["GET", "POST"], "/api/auth/*", (context) =>
 
 app.route("/api/ideas", ideas);
 app.route("/api/account", account);
+app.route("/api/demo", demo);
 
 function errorToResponse(error: unknown): Response {
   if (error instanceof HttpError) {

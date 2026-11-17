@@ -1,3 +1,5 @@
+import { getDatabase } from "./db/client";
+import { DrizzleDemoBook } from "./db/demo-book";
 import { DrizzleIdeaRepository } from "./db/idea-repository";
 import { DrizzleMessageRepository } from "./db/message-repository";
 import {
@@ -76,4 +78,9 @@ export function usageQuota(): InMemoryUsageQuota {
   }
 
   return cachedQuota;
+}
+
+/** The seeded demo book, restored by the reset button (RF-73). */
+export function demoBook(): DrizzleDemoBook {
+  return new DrizzleDemoBook(getDatabase());
 }
