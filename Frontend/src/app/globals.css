@@ -47,6 +47,7 @@
 @theme {
   /* Palette: deep blacks, warm greys, one bronze accent used sparingly. */
   --color-ink-950: #0f0f0f; /* page background */
+  --color-ink-925: #121212; /* well cut into a raised card: deeper than ink-900 */
   --color-ink-900: #161616; /* raised surfaces (clay panels) */
   --color-ink-850: #1b1b1b; /* top face of clay gradients, hover */
   --color-ink-800: #1f1f1f; /* sunken clay: inputs, wells */

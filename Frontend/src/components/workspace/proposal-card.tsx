@@ -21,6 +21,9 @@ const MAX_CORRECTION = 2000;
 /**
  * One proposal: what the coach identified, why, and the user's three choices.
  *
+ * It is a clay card (`shadow-clay`) floating inside the tray, so each proposal
+ * reads as a card the coach slid across the desk: one block, one decision.
+ *
  * - "Sí, añadir al plan" → `accept`  → the node becomes `confirmed`.
  * - "Corregir"           → `correct` → the user's text, node becomes `edited`.
  * - "Descartar"          → `discard` → the proposal is removed.
@@ -89,7 +92,7 @@ export function ProposalCard({
       // entrance never flashes; the failsafe in globals.css guarantees it shows.
       data-enter={fresh ? "proposal" : undefined}
       aria-busy={busy || undefined}
-      className="flex flex-col gap-4 border-t border-line py-5 first:border-t-0"
+      className="flex flex-col gap-4 rounded-clay-lg border border-paper/[0.07] bg-ink-850 p-4 shadow-clay sm:p-5"
     >
       <header className="flex flex-wrap items-center justify-between gap-3">
         <p className="flex items-baseline gap-3">
@@ -117,7 +120,7 @@ export function ProposalCard({
             rows={3}
             maxLength={MAX_CORRECTION}
             autoFocus
-            className="w-full resize-y border border-line-strong bg-ink-800 p-3 text-[0.9375rem] leading-relaxed text-paper focus:border-amber focus:outline-none"
+            className="w-full resize-y rounded-clay-sm border border-black/40 bg-ink-800 p-3 text-[0.9375rem] leading-relaxed text-paper shadow-clay-inset transition-colors duration-300 focus:border-amber/70 focus:outline-none"
           />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="text-[0.6875rem] text-stone tabular-nums">
@@ -137,7 +140,7 @@ export function ProposalCard({
               </Button>
               <Button
                 type="submit"
-                variant="accent"
+                variant="primary"
                 size="sm"
                 disabled={!trimmed}
                 loading={busy && request?.decision === "correct"}
@@ -160,7 +163,7 @@ export function ProposalCard({
           </p>
           <div className="flex flex-wrap gap-2">
             <Button
-              variant="accent"
+              variant="primary"
               size="sm"
               onClick={() => void onDecide(node, "accept")}
               disabled={busy}

@@ -12,9 +12,12 @@ const STAGES: readonly StageFilter[] = ["all", "empty", "progress", "complete"];
 /**
  * Search box and stage filter for the studio's list (RF-15).
  *
- * The stage filter is a group of toggle buttons (`aria-pressed`), each with
- * its count, so the person sees how many ideas fall in each stage before
- * choosing. Filtering happens in the browser over data already loaded.
+ * The search sits in a sunken clay well (`shadow-clay-inset`), the same recipe
+ * as `TextField`: a slot carved in the surface, not a line drawn on it. The
+ * stage filter is a group of toggle buttons (`aria-pressed`), each with its
+ * count, so the person sees how many ideas fall in each stage before choosing;
+ * the active one is a raised clay pill, the rest stay flat until hovered.
+ * Filtering happens in the browser over data already loaded.
  */
 export function IdeaFilters({
   query,
@@ -43,7 +46,7 @@ export function IdeaFilters({
         <svg
           aria-hidden="true"
           viewBox="0 0 16 16"
-          className="pointer-events-none absolute top-1/2 left-0 size-3.5 -translate-y-1/2 text-stone"
+          className="pointer-events-none absolute top-1/2 left-3.5 size-3.5 -translate-y-1/2 text-stone"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.4"
@@ -58,7 +61,7 @@ export function IdeaFilters({
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Buscar por nombre o resumen  ( / )"
-          className="w-full border-0 border-b border-line-strong bg-transparent py-2.5 pr-2 pl-6 text-sm text-paper placeholder:text-stone focus:border-amber focus:outline-none focus-visible:outline-none"
+          className="w-full rounded-clay-sm border border-black/40 bg-ink-800 py-2.5 pr-3 pl-10 text-sm text-paper shadow-clay-inset transition-[border-color,background-color] duration-300 placeholder:text-stone hover:bg-ink-700/60 focus:border-amber/70 focus:bg-ink-800 focus:outline-none focus-visible:outline-none"
         />
       </div>
 
@@ -72,10 +75,10 @@ export function IdeaFilters({
               aria-pressed={active}
               onClick={() => onStageChange(value)}
               className={cn(
-                "inline-flex min-h-9 items-center gap-2 rounded-full border px-3.5 text-[0.8125rem] transition-colors duration-300",
+                "inline-flex min-h-9 items-center gap-2 rounded-full border px-3.5 text-[0.8125rem] transition-[color,background-color,border-color,box-shadow] duration-300",
                 active
-                  ? "border-paper/60 bg-paper/[0.06] text-paper"
-                  : "border-line text-stone hover:border-line-strong hover:text-mist",
+                  ? "border-paper/[0.08] bg-ink-900 text-paper shadow-clay"
+                  : "border-transparent text-stone hover:bg-paper/[0.04] hover:text-mist",
               )}
             >
               {STAGE_LABEL[value]}

@@ -6,6 +6,138 @@ verificó**.
 
 ---
 
+## 2026-11-17 — Adjuntos en el chat (imagen y PDF)
+
+**Qué:** el compositor del workspace puede llevar un archivo junto al mensaje.
+Un clip en el pozo abre el selector, la previsualización flota sobre la barra
+como ficha clay y el adjunto enviado aparece dentro de la burbuja.
+
+**Por qué:** el chat solo aceptaba texto. Los archivos se manejan hoy en el
+cliente —no hay endpoint de subida—, pero el contrato queda listo para que el
+backend reciba el `File` sin rediseñar componentes.
+
+**Archivos:** `lib/attachments.ts` (nuevo), `components/ui/icons.tsx` (nuevo),
+`components/workspace/attachment-preview.tsx` (nuevo), `composer.tsx`,
+`message-entry.tsx`, `use-workspace.ts` y `docs/design-system.md`.
+
+**Detalle:**
+
+- `Attachment` (`file`, `type`, `name`, `previewUrl`) es el contrato único. El
+  tipo se decide por MIME (`image/*`, `application/pdf`), nunca por extensión;
+  `attachmentFromFile` devuelve `null` para cualquier otra cosa y el `accept`
+  del input ya filtra antes.
+- Solo las imágenes piden object URL (`previewUrl`); un PDF se muestra como
+  bloque de documento con su nombre, así que no se crea una URL que nadie usa.
+- La propiedad del object URL se transfiere: el compositor lo libera al
+  descartar, la burbuja al desmontarse. Así no se rompe una miniatura ya
+  enviada ni queda memoria colgada.
+- `onSend(content, attachment)` conserva el camino real del texto: solo el turno
+  con adjunto se simula (900 ms y respuesta local). El comentario `BACKEND:` en
+  `use-workspace.ts` marca el punto exacto donde entra el `multipart/form-data`.
+- Un adjunto sin texto es un mensaje válido; el texto solo sigue necesitando
+  algo que decir.
+- Si el turno no se acepta, texto y archivo vuelven al compositor, igual que ya
+  pasaba con el texto.
+
+**Verificado:** 90 tests en 16 archivos (5 de `attachments`, 7 nuevos del
+compositor, 2 de la burbuja), `typecheck`, `lint` y `build` con Turbopack. En
+Chromium contra el mock: `accept="image/*,application/pdf"`, miniatura y bloque
+PDF visibles, burbuja con la imagen y respuesta simulada, compositor limpio, y
+un `.docx` ignorado. `shadow-clay-inset` calculado en el clip y en el pozo;
+`shadow-clay` en la ficha.
+
+## 2026-11-16 — Next.js 16.4.6
+
+**Qué:** el cliente sube de Next.js 16.4.3 a 16.4.6. Los tres paquetes que el
+proyecto fija a mano (`next`, `@next/env` y `eslint-config-next`) van juntos a la
+misma versión para que el runtime, el cargador del `.env` y el flat config de
+ESLint no queden desalineados.
+
+**Por qué:** 16.4.6 es la última patch publicada de la línea 16.4; el pin exacto
+del proyecto la dejaba fuera de cualquier `pnpm install`.
+
+**Archivos:** `Frontend/package.json`, `pnpm-lock.yaml`.
+
+**Verificado:** `typecheck` (Next regenera los route types), `test` (76/76),
+`lint` y `build` con Turbopack pasan sobre 16.4.6; el build reporta
+`Next.js 16.4.6` y las 9 rutas se prerenderizan igual que antes.
+
+---
+
+## 2026-11-15 — El Estudio como fichas clay
+
+**Qué:** la librería de proyectos deja de ser un índice con reglas de 1 px y
+pasa a ser una pila de fichas físicas: cada idea es un panel `shadow-clay-panel`
+que se eleva en hover, el buscador se hunde en un pozo y la píldora de filtro
+activa queda en relieve. El estado vacío usa el mismo panel.
+
+**Por qué:** era la última pantalla que seguía con el lenguaje anterior al
+restyling clay; el workspace ya estaba convertido y el estudio no.
+
+**Archivos:** `components/dashboard/{idea-entry,idea-filters,studio-view,studio-empty}.tsx`
+y `docs/design-system.md`.
+
+**Detalle:**
+
+- `IdeaEntry`: el `<Link>` es la ficha (`rounded-clay-lg`, `bg-ink-900`,
+  `shadow-clay-panel`, `p-5`/`p-6`). Hover y `focus-visible`: `-translate-y-0.5`,
+  `bg-ink-850` y `shadow-clay-lift`. La elevación va en el `<Link>` y no en el
+  `<li>` porque `Reveal` anima `transform` en el item de la lista con Anime.js:
+  un `transform` inline gana a cualquier clase de hover.
+- La lista perdió `border-t` en el `<ol>` y las separaciones pasaron a
+  `gap-4 md:gap-5`; el esqueleto de carga repite la forma de la ficha para que
+  nada salte al llegar los datos.
+- `IdeaFilters`: el buscador replica la receta de `TextField` (pozo `ink-800` +
+  `shadow-clay-inset`, foco ámbar) con la lupa dentro del pozo. La píldora
+  activa: `bg-ink-900` + `shadow-clay` + borde `paper/[0.08]`; las inactivas,
+  planas.
+- «Ninguna idea coincide» pasó a un contorno punteado (el mismo recurso que las
+  dimensiones abiertas del plan) en vez de una regla superior.
+- «+ Nueva idea» **no cambió**: ya era `primary`, el botón clay crema con
+  `shadow-clay-solid`, y ese es el punto focal. Tocarlo habría duplicado el
+  token.
+
+**Verificado:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (103 tests) y capturas
+reales a 1440 y 390 px con Playwright, incluido el estado hover de una ficha.
+
+---
+
+## 2026-11-15 — Relieve clay en el workspace
+
+**Qué:** la vista partida del workspace (chat + plan) pasa de rectángulos con
+borde a bloques táctiles: las burbujas, las fichas de propuesta y las tarjetas
+de las diez dimensiones flotan con `shadow-clay`; el campo de escritura se
+hunde como un pozo (`shadow-clay-inset`).
+
+**Por qué:** el sistema de tokens ya era Dark Claymorphism, pero el workspace
+seguía usando `border-line` plano, así que el relieve no llegaba a la pantalla
+donde el usuario pasa el tiempo.
+
+**Archivos:** `components/workspace/{message-entry,proposal-card,proposal-tray,dimension-entry,plan-panel,composer}.tsx`
+y `docs/design-system.md`.
+
+**Detalle:**
+
+- Burbujas: coach `bg-ink-900` + `shadow-clay`; usuario `bg-ink-700` +
+  `shadow-clay`; la esquina más cercana a quien habla sigue recta
+  (`rounded-tl-sm` / `rounded-tr-sm`).
+- «Lo que hemos identificado»: panel `shadow-clay-panel` con hairline ámbar y
+  `overflow-hidden` para que las esquinas recorten la cabecera.
+- Fichas de propuesta: `bg-ink-850` + `shadow-clay`, separadas por `gap-3`.
+  «Sí, añadir al plan» y «Guardar mi versión» pasan a `primary` (crema sólida);
+  «Descartar» se queda en `ghost` para no competir con la confirmación.
+- Plan: cada dimensión es una tarjeta. Validada = bloque macizo (cara superior
+  `ink-850→ink-900`), por revisar = hairline ámbar, abierta = pozo hundido.
+  El aviso de «recién validada» pasó de animar `background-color` del `<li>` a
+  un overlay bronce con `opacity`: el color inline habría borrado el fondo de
+  la tarjeta al terminar.
+- Composer: el marco del campo es pozo (`rounded-clay-sm` +
+  `shadow-clay-inset`) y «Enviar» mantiene su relieve crema dentro del pozo.
+
+**Verificado:** `pnpm typecheck`, `pnpm lint` y `pnpm test` (Vitest, jsdom).
+Los tests no dependen de clases CSS, así que el refactor no los toca. La
+comprobación visual es con `pnpm ui` (mock en `:3001` + cliente en `:3000`).
+
 ## 2026-11-15 — Miniaturas de proyecto como muestras de material
 
 Las tarjetas del Estudio dejaron de repetir las fotografías de paisajes: cada

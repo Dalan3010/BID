@@ -9,9 +9,13 @@ import { formatRelative, plural, toPercent } from "@/lib/format";
 import { ProjectThumbnail } from "./project-thumbnail";
 
 /**
- * One idea in the studio, laid out as an editorial entry rather than a card:
- * a running number, a material swatch, the title in serif, and a column of
- * facts that all come from `GET /api/ideas` (completion, gaps, agenda, date).
+ * One idea in the studio, as a tactile clay ficha: a running number, a material
+ * swatch, the title in serif, and a column of facts that all come from
+ * `GET /api/ideas` (completion, gaps, agenda, date).
+ *
+ * The whole card is the link, so the hover lift belongs to the `<Link>` and
+ * never to the `<li>`: `Reveal` animates the list item's `transform`, and an
+ * inline transform there would win over any hover class.
  */
 export function IdeaEntry({
   entry,
@@ -28,10 +32,10 @@ export function IdeaEntry({
   const marks = statusesFromAgenda(agenda);
 
   return (
-    <li data-reveal className="border-b border-line">
+    <li data-reveal>
       <Link
         href={`/ideas/${idea.id}`}
-        className="group grid gap-6 py-8 transition-colors duration-500 hover:bg-paper/[0.02] focus-visible:bg-paper/[0.03] md:grid-cols-12 md:gap-8 md:py-10"
+        className="group grid gap-6 rounded-clay-lg border border-paper/[0.06] bg-ink-900 p-5 shadow-clay-panel transition-[transform,background-color,box-shadow] duration-500 ease-[var(--ease-studio)] hover:-translate-y-0.5 hover:bg-ink-850 hover:shadow-clay-lift focus-visible:-translate-y-0.5 focus-visible:bg-ink-850 focus-visible:shadow-clay-lift md:grid-cols-12 md:gap-8 md:p-6"
       >
         {/* Number + material swatch */}
         <div className="flex items-start gap-5 md:col-span-4 lg:col-span-3">

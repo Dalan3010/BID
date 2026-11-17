@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { formatTime } from "@/lib/format";
 
+import { MessageAttachment } from "./attachment-preview";
 import { CopyButton } from "./copy-button";
 import { RichText } from "./rich-text";
 import type { ConversationMessage } from "./use-workspace";
@@ -10,14 +11,14 @@ import type { ConversationMessage } from "./use-workspace";
 /**
  * One message as a chat bubble.
  *
- * - The coach speaks from the left, with its monogram avatar, on a raised
- *   graphite bubble with a hairline border.
- * - The user speaks from the right, on a lighter bubble without avatar.
+ * - The coach speaks from the left, with its monogram avatar, on a raised clay
+ *   panel (`shadow-clay`): a card the coach slides onto the desk.
+ * - The user speaks from the right, on a lighter clay face without avatar.
  * - The corner nearest the speaker is squared, so each bubble "points" to who
  *   said it. Time (or "enviando" / "escribiendo") sits under the bubble.
  *
- * The visual language stays the studio's: dark palette, almost-square radii,
- * no gradients or glow.
+ * The visual language stays the studio's: dark palette, one light source
+ * top-left, relief instead of glow.
  */
 export function MessageEntry({
   message,
@@ -46,6 +47,7 @@ export function MessageEntry({
         ) : null
       }
     >
+      {message.attachment ? <MessageAttachment attachment={message.attachment} /> : null}
       {message.content ? <RichText text={message.content} /> : null}
       {streaming ? (
         <span
@@ -98,10 +100,10 @@ export function ChatBubble({
         <div
           data-bubble
           className={cn(
-            "px-4 py-3 text-[0.9375rem] leading-[1.65] sm:px-5",
+            "rounded-clay px-4 py-3 text-[0.9375rem] leading-[1.65] sm:px-5",
             fromCoach
-              ? "rounded-lg rounded-tl-xs border border-line bg-ink-900 text-paper"
-              : "rounded-lg rounded-tr-xs bg-ink-700 text-paper",
+              ? "rounded-tl-sm border border-paper/[0.06] bg-ink-900 text-paper shadow-clay"
+              : "rounded-tr-sm border border-paper/[0.09] bg-ink-700 text-paper shadow-clay",
           )}
         >
           {children}
@@ -127,7 +129,7 @@ export function CoachAvatar() {
   return (
     <span
       aria-hidden="true"
-      className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-bronze/60 bg-ink-900 font-serif text-lg leading-none text-bronze italic"
+      className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-bronze/60 bg-ink-900 font-serif text-lg leading-none text-bronze italic shadow-clay"
     >
       c
     </span>
