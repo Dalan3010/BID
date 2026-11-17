@@ -1,3 +1,4 @@
+import { createCoachModel, resolveCoachProvider } from "./ai";
 import { DrizzleIdeaRepository } from "./db/idea-repository";
 import { DrizzleMessageRepository } from "./db/message-repository";
 
@@ -25,4 +26,20 @@ export function messageRepository(): DrizzleMessageRepository {
   }
 
   return messageRepositoryInstance;
+}
+
+/**
+ * The coach the application talks to.
+ *
+ * It is built once per process: the provider is read from the environment, and
+ * a page reload should not renegotiate it.
+ */
+let cachedCoachModel: ReturnType<typeof createCoachModel> | undefined;
+
+export function coachModel() {
+  if (!cachedCoachModel) {
+    cachedCoachModel = createCoachModel({ provider: resolveCoachProvider() });
+  }
+
+  return cachedCoachModel;
 }
