@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { app } from "./app";
+import {
+  DimensionNotEmptyError,
+  NotAProposalError,
+  VersionNotFoundError,
+} from "./application/errors";
+import { app, errorToResponse } from "./app";
 
 // No session, and no database: the error contract does not need one.
 vi.mock("./infrastructure/auth/auth", () => ({
@@ -36,5 +41,45 @@ describe("API error responses", () => {
 
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ error: "No hay sesión." });
+  });
+
+  it("explains a non-empty dimension with its own message", async () => {
+    const response = errorToResponse(
+      new DimensionNotEmptyError("idea-1", "problem"),
+    );
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error:
+        "Esa dimensión ya tiene contenido o propuestas: editá el nodo existente o resolvé las propuestas.",
+    });
+  });
+
+  it("explains that a proposal is no longer pending", async () => {
+    const response = errorToResponse(new NotAProposalError("node-1"));
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "Esa propuesta ya no está pendiente.",
+    });
+  });
+
+  it("explains that a version was not found", async () => {
+    const response = errorToResponse(new VersionNotFoundError("idea-1", 3));
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({
+      error: "No encontramos esa versión.",
+    });
+  });
+
+  it("keeps the generic message for an unknown error", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const response = errorToResponse(new Error("boom"));
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Algo salió mal." });
+    expect(error).toHaveBeenCalled();
+    error.mockRestore();
   });
 });

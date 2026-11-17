@@ -1,11 +1,14 @@
 import {
+  DimensionNotEmptyError,
   IdeaNotFoundError,
   NotDemoAccountError,
+  NotAProposalError,
   InvalidIdeaError,
   InvalidNodeError,
   NodeNotEditableError,
   NodeNotFoundError,
   SourceTransitionError,
+  VersionNotFoundError,
 } from "../application/errors";
 
 /**
@@ -20,6 +23,9 @@ export function statusFor(error: unknown): number | null {
   if (error instanceof NodeNotFoundError) return 404;
   if (error instanceof NodeNotEditableError) return 409;
   if (error instanceof SourceTransitionError) return 409;
+  if (error instanceof DimensionNotEmptyError) return 409;
+  if (error instanceof NotAProposalError) return 409;
+  if (error instanceof VersionNotFoundError) return 404;
   if (error instanceof InvalidIdeaError) return 400;
   if (error instanceof InvalidNodeError) return 400;
 

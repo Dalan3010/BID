@@ -1,6 +1,11 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
+import {
+  DimensionNotEmptyError,
+  NotAProposalError,
+  VersionNotFoundError,
+} from "./application/errors";
 import { getAuth } from "./infrastructure/auth/auth";
 import { statusFor } from "./lib/errors";
 import { HttpError } from "./lib/http-error";
@@ -58,7 +63,8 @@ app.route("/api/ideas", ideas);
 app.route("/api/account", account);
 app.route("/api/demo", demo);
 
-function errorToResponse(error: unknown): Response {
+/** Exported so the error contract can be tested without a live route. */
+export function errorToResponse(error: unknown): Response {
   if (error instanceof HttpError) {
     return json({ error: error.message }, error.status);
   }
@@ -66,7 +72,7 @@ function errorToResponse(error: unknown): Response {
   const status = statusFor(error);
 
   if (status !== null) {
-    return json({ error: messageFor(status) }, status);
+    return json({ error: messageFor(error, status) }, status);
   }
 
   console.error("[api] unhandled error:", error);
@@ -74,8 +80,23 @@ function errorToResponse(error: unknown): Response {
   return json({ error: "Algo salió mal." }, 500);
 }
 
-/** The message the client shows for a status the domain produced. */
-function messageFor(status: number): string {
+/**
+ * The message the client shows for a domain error.
+ *
+ * Specific errors get a message that tells the user what to do next; the status
+ * fallback stays for errors that share a status but have no dedicated copy.
+ */
+function messageFor(error: unknown, status: number): string {
+  if (error instanceof DimensionNotEmptyError) {
+    return "Esa dimensión ya tiene contenido o propuestas: editá el nodo existente o resolvé las propuestas.";
+  }
+
+  if (error instanceof NotAProposalError) {
+    return "Esa propuesta ya no está pendiente.";
+  }
+
+  if (error instanceof VersionNotFoundError) return "No encontramos esa versión.";
+
   if (status === 403) return "Solo la cuenta demo se puede reiniciar.";
   if (status === 404) return "No encontramos eso.";
   if (status === 409) return "Ese cambio no está permitido.";
