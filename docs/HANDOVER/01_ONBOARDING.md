@@ -58,8 +58,8 @@ openssl rand -base64 32
 | Variable | Default | Para qué |
 |---|---|---|
 | `COACH_PROVIDER` | `rehearsal` | `rehearsal` = guion; `live` = Google |
-| `COACH_MODEL` | `gemini-2.5-flash-lite` | Modelo del coach |
-| `EXTRACTOR_MODEL` | `gemini-2.5-flash-lite` | Modelo del extractor |
+| `COACH_MODEL` | `gemini-3.5-flash-lite` | Modelo del coach |
+| `EXTRACTOR_MODEL` | `gemini-3.5-flash-lite` | Modelo del extractor |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | vacío | Necesaria si `COACH_PROVIDER=live` |
 | `COACH_QUOTA` | `50` | Llamadas por idea antes de avisar del límite |
 | `AUTH_LOG_SECRETS` | `0` | `1` loguea links con token (solo desarrollo) |

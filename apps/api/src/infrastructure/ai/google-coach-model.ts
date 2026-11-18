@@ -23,7 +23,7 @@ import {
 export class GoogleCoachModel implements CoachModel {
   constructor(
     private readonly model: LanguageModel = google(
-      process.env.COACH_MODEL ?? "gemini-2.5-flash-lite",
+      process.env.COACH_MODEL ?? "gemini-3.5-flash-lite",
     ),
   ) {}
 

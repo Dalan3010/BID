@@ -19,7 +19,7 @@ import type {
 export class ProviderExtractor implements Extractor {
   constructor(
     private readonly modelId: string = process.env.EXTRACTOR_MODEL ??
-      "gemini-2.5-flash-lite",
+      "gemini-3.5-flash-lite",
   ) {}
 
   async extract(input: ExtractionRequest): Promise<string> {
