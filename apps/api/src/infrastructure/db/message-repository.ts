@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 
 import type {
   MessageRepository,
@@ -27,14 +27,21 @@ export class DrizzleMessageRepository implements MessageRepository {
   }
 
   async listRecent(ideaId: string, limit: number): Promise<ChatMessage[]> {
+    // "Recent" means the newest ones, so the query has to sort descending to
+    // make LIMIT cut the old turns instead of the new ones. Ascending + LIMIT
+    // would return the *first* messages of the conversation forever once it
+    // grows past the limit: the coach and the extractor would never see what
+    // the user just said, and the agenda would stay stuck on the same
+    // dimension. The rows are reversed afterwards so callers still read the
+    // conversation oldest-first, like `listByIdea`.
     const rows = await this.db
       .select()
       .from(messages)
       .where(eq(messages.ideaId, ideaId))
-      .orderBy(asc(messages.createdAt))
+      .orderBy(desc(messages.createdAt))
       .limit(limit);
 
-    return rows.map(toChatMessage);
+    return rows.reverse().map(toChatMessage);
   }
 
   async add(message: NewChatMessage): Promise<ChatMessage> {
