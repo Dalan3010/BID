@@ -90,7 +90,10 @@ export function ChatBubble({
       tabIndex={id ? -1 : undefined}
       aria-label={label ?? (fromCoach ? "Mensaje del coach" : "Tu mensaje")}
       className={cn(
-        "flex gap-3 px-gutter py-2.5 focus:outline-none lg:px-10",
+        // `relative` anchors this article's `sr-only` labels: they are
+        // `position: absolute`, and without a positioned ancestor they escape
+        // the conversation scroller and stretch the document past the viewport.
+        "relative flex gap-3 px-gutter py-2.5 focus:outline-none lg:px-10",
         fromCoach ? "justify-start" : "justify-end",
       )}
     >
