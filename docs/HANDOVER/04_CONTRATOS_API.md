@@ -19,7 +19,7 @@ con Postgres y Better Auth; el cliente nunca toca la base.
 
 - Origen permitido: exactamente `WEB_ORIGIN` (nunca `*`, porque las credenciales
   no lo permiten).
-- Métodos: `GET, POST, OPTIONS`.
+- Métodos: `GET, POST, PATCH, DELETE, OPTIONS`.
 - Headers: `content-type`.
 - Preflight cacheado 600 s.
 
@@ -36,8 +36,8 @@ Todos los errores responden JSON:
 | `400` | Cuerpo inválido |
 | `401` | Sin sesión |
 | `403` | Operación reservada a la cuenta demo |
-| `404` | Idea o nodo inexistente (o de otro usuario) |
-| `409` | Transición de procedencia inválida |
+| `404` | Idea, nodo, versión o paso inexistente (o de otro usuario) |
+| `409` | Cambio no permitido: dimensión ocupada, nodo no editable o propuesta ya resuelta |
 | `429` | Cuota de extracciones agotada |
 | `500` | Error no controlado |
 | `502` | Fallo del proveedor de IA |
@@ -218,6 +218,35 @@ Todo lo que la página de la idea necesita, en **una sola vuelta**.
 **404** si la idea no existe **o es de otro usuario**. Nunca `403`: un `403`
 confirmaría que existe.
 
+### `PATCH /api/ideas/:id`
+
+Renombra la idea o reescribe su resumen. **Nunca toca el grafo.**
+
+**Body** — al menos uno de los dos (un body vacío respondería 200 sin cambiar
+nada, y eso escondería un bug del cliente):
+
+```json
+{ "title": "Nuevo título" }
+```
+
+| Campo | Regla |
+|---|---|
+| `title` | opcional; `trim`, 1..120 |
+| `summary` | opcional; `trim`, máx 2000 |
+
+**200** — `{ "idea": { … } }` actualizada.
+
+**400 / 401 / 404**
+
+### `DELETE /api/ideas/:id`
+
+Borra la idea **y todo lo que cuelga de ella** (nodos, mensajes, versiones,
+pasos del arranque) por la clave foránea en cascada.
+
+**204** — sin body.
+
+**401 / 404**
+
 ### `POST /api/ideas/:id/messages`
 
 Un turno de la conversación.
@@ -332,6 +361,205 @@ en conocimiento.
 
 **400 / 401 / 404 / 409**
 
+### `POST /api/ideas/:id/nodes`
+
+Autoría manual: responde una **dimensión vacía** sin IA. El nodo nace `edited`,
+sin mensaje de origen.
+
+**Body**
+
+```json
+{ "type": "problem", "content": "El cliente pierde una hora al día." }
+```
+
+| Campo | Regla |
+|---|---|
+| `type` | una de las diez dimensiones |
+| `content` | string, `trim`, 1..4000 |
+
+**201** — `{ "node": { …, "source": "edited", "messageId": null } }`.
+
+**Comportamiento**
+
+- Si la dimensión ya tiene contenido o propuestas → **409**: no se apila. Se
+  edita el nodo existente o se resuelven las propuestas primero.
+- El cambio validado genera una versión (snapshot) del grafo.
+
+**400 / 401 / 404 / 409**
+
+### `PATCH /api/ideas/:id/nodes/:nodeId`
+
+Reescribe a mano un nodo **ya validado** (`confirmed` o `edited`).
+
+**Body**
+
+```json
+{ "content": "Texto corregido a mano" }
+```
+
+| Campo | Regla |
+|---|---|
+| `content` | string, `trim`, 1..4000 |
+
+**200** — `{ "node": { … } }`.
+
+**Comportamiento**
+
+- Un nodo `inferred` (propuesta) **no** se edita por acá: se resuelve con la
+  ruta de propuestas → **409**.
+- El cambio genera una versión (snapshot) del grafo.
+
+**400 / 401 / 404 / 409**
+
+### `GET /api/ideas/:id/versions`
+
+Cada snapshot del grafo, del más nuevo al más viejo. Una versión se crea solo
+con cambios **confirmados**; las propuestas solas nunca generan versión.
+
+**200**
+
+```json
+{
+  "versions": [
+    { "version": 3, "createdAt": "…", "nodeCount": 9 },
+    { "version": 2, "createdAt": "…", "nodeCount": 7 }
+  ]
+}
+```
+
+**401 / 404**
+
+### `GET /api/ideas/:id/versions/:version/diff`
+
+Qué cambió entre una versión y otra de la misma idea.
+
+**Query**: `against` (opcional) — la versión contra la que comparar. Por defecto
+es la **inmediatamente anterior**; si se manda, debe ser ≥ 1 y menor que
+`version`.
+
+**200**
+
+```json
+{
+  "diff": {
+    "added": [ { "…": "IdeaNode" } ],
+    "modified": [
+      { "before": { "…": "IdeaNode" }, "after": { "…": "IdeaNode" } }
+    ],
+    "removed": [ { "…": "IdeaNode" } ],
+    "from": { "version": 2, "createdAt": "…", "nodeCount": 7 },
+    "to": { "version": 3, "createdAt": "…", "nodeCount": 9 }
+  }
+}
+```
+
+| Campo | Notas |
+|---|---|
+| `added` / `removed` | nodos completos (`IdeaNode`) |
+| `modified` | `{ before, after }`; los nodos se aparean por `id` |
+| `from` | resumen de la versión base; `null` cuando la versión no tiene historia |
+| `to` | resumen de la versión comparada |
+
+El diff compara solo los campos con significado (`type`, `content`,
+`source`): los timestamps y la confianza son bookkeeping y nunca marcan un
+nodo como modificado.
+
+**400** si `against` no es válida · **404** si la idea o la versión no
+existen.
+
+### `GET /api/ideas/:id/steps`
+
+Los pasos del **arranque**, del más viejo al más nuevo. Se piden cuando la idea
+ya tiene las diez dimensiones validadas: el plan está cerrado y lo que sigue
+es acompañamiento, no más estructura.
+
+**200**
+
+```json
+{
+  "steps": [
+    {
+      "id": "uuid",
+      "ideaId": "uuid",
+      "title": "Fijar el precio de la primera versión",
+      "detail": "Un número concreto que puedas cobrar mañana.",
+      "status": "open",
+      "createdAt": "…"
+    }
+  ]
+}
+```
+
+| Campo | Notas |
+|---|---|
+| `status` | `open` \| `done`; la agenda del coach es el primer `open` |
+| `detail` | `string \| null`; contexto del coach al proponerlo |
+
+### `POST /api/ideas/:id/steps/proposals`
+
+Le pide al coach los primeros pasos concretos. **No persiste nada**: la
+respuesta son propuestas y la persona decide (regla 1 del producto).
+
+**Body**: `{}`
+
+**200**
+
+```json
+{
+  "quotaReached": false,
+  "proposals": [
+    { "title": "Conseguir tus primeros tres clientes de prueba", "detail": "…" }
+  ]
+}
+```
+
+**Comportamiento**
+
+- La cuota se consulta **antes** de llamar al modelo; `quotaReached: true`
+  avisa el límite dentro del 200 (no es un 429).
+- Una respuesta inválida del modelo no propone ni persiste nada (D6).
+- Con `COACH_PROVIDER=rehearsal`, responde desde el guion: la demo funciona
+  sin red ni API key.
+
+**401 / 404**
+
+### `POST /api/ideas/:id/steps`
+
+Guarda los pasos que la persona aceptó. **Único camino** que convierte una
+propuesta en paso.
+
+**Body**
+
+```json
+{
+  "steps": [
+    { "title": "Fijar el precio de la primera versión", "detail": "…" }
+  ]
+}
+```
+
+| Campo | Regla |
+|---|---|
+| `steps` | array, 1..8 |
+| `title` | string, `trim`, 1..160 |
+| `detail` | opcional; `trim`, 1..600 |
+
+**201** — `{ "steps": [...] }` con los pasos creados (`status: "open"`).
+
+**400 / 401 / 404**
+
+### `PATCH /api/ideas/:id/steps/:stepId`
+
+Completa un paso o reabre uno cerrado. Completar el actual mueve la agenda al
+siguiente `open` por sí solo.
+
+**Body**: `{ "status": "open" | "done" }`
+
+**200** — `{ "step": { … } }` actualizado.
+
+**404** — `"No encontramos ese paso."` si el paso no existe (o la idea es de
+otro usuario).
+
 ---
 
 ## 5. Cuenta — `/api/account`
@@ -397,10 +625,20 @@ El cliente comparte **solo** los tipos de `@bid/core`; nunca importa de
 | `sendMessage(id, content)` | `POST /api/ideas/:id/messages` (devuelve `Response` crudo para leer el stream) |
 | `requestExtraction(id)` | `POST /api/ideas/:id/extractions` |
 | `resolveProposal(id, nodeId, decision, content?)` | `POST /api/ideas/:id/proposals/:nodeId` |
+| `listArranqueSteps(id, signal?)` | `GET /api/ideas/:id/steps` |
+| `addArranqueSteps(id, steps)` | `POST /api/ideas/:id/steps` |
+| `requestStepProposals(id)` | `POST /api/ideas/:id/steps/proposals` |
+| `updateArranqueStepStatus(id, stepId, status)` | `PATCH /api/ideas/:id/steps/:stepId` |
 | `resetDemo()` | `POST /api/demo/reset` |
 | `exportUrl()` | URL de descarga (navegación top-level para que el navegador la trate como descarga) |
 
 Todas usan `credentials: "include"`.
+
+> El cliente **todavía no** expone la autoría manual (`POST/PATCH` nodos), el
+> renombrado y borrado de ideas (`PATCH`/`DELETE /api/ideas/:id`) ni las
+> versiones y su diff: esas rutas funcionan y están contratadas arriba, pero la
+> UI aún no las consume (pendiente del feature
+> `odd/tasks/backend-completion.md`).
 
 ### Manejo de errores en el cliente
 
@@ -444,4 +682,21 @@ curl -b cookies.txt -X POST http://localhost:3001/api/ideas/<id>/extractions \
 curl -b cookies.txt -X POST http://localhost:3001/api/ideas/<id>/proposals/<nodeId> \
   -H 'content-type: application/json' \
   -d '{"decision":"accept"}'
+
+# Pedir pasos de arranque al coach y aceptarlos
+curl -b cookies.txt -X POST http://localhost:3001/api/ideas/<id>/steps/proposals \
+  -H 'content-type: application/json' -d '{}'
+
+curl -b cookies.txt -X POST http://localhost:3001/api/ideas/<id>/steps \
+  -H 'content-type: application/json' \
+  -d '{"steps":[{"title":"Llamar a dos proveedores"}]}'
+
+# Autoría manual de una dimensión vacía
+curl -b cookies.txt -X POST http://localhost:3001/api/ideas/<id>/nodes \
+  -H 'content-type: application/json' \
+  -d '{"type":"problem","content":"El cliente pierde una hora al día."}'
+
+# Historial de versiones y su diff
+curl -b cookies.txt http://localhost:3001/api/ideas/<id>/versions
+curl -b cookies.txt "http://localhost:3001/api/ideas/<id>/versions/3/diff?against=2"
 ```

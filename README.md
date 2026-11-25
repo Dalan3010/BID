@@ -9,9 +9,14 @@ la idea y qué falta.
 
 > **Estado:** el **backend** está completo para usar el producto sin IA: autoría
 > manual de nodos, alta, renombre, resumen y borrado de ideas, historial de
-> versiones con diff y un mapeo de errores honesto. 145 tests verdes contra
-> Postgres. La **UI** todavía no expone esa autoría ni el historial —el plan se
-> ve en modo lectura— y el mock no replica aún los endpoints nuevos.
+> versiones con diff y un mapeo de errores honesto. Y con la idea completa
+> entra el **arranque**: el coach conduce una lista de pasos con respaldo en
+> la web (grounding de Google Search vía AI SDK), que la persona acepta,
+> completa o descarta — los pasos nunca entran al plan. 322 tests verdes (18
+> de integración salteados sin base). La **UI** todavía no expone la autoría
+> manual ni el historial —ese plan se ve en modo lectura— aunque el arranque
+> sí tiene su panel; el mock replica los endpoints del arranque, no los de
+> nodos y versiones.
 
 ## Stack
 
@@ -198,8 +203,8 @@ TEST_DATABASE_URL=postgres://bid:bid@127.0.0.1:5432/bid_test pnpm test
 ```
 
 Ese `TEST_DATABASE_URL` tiene que venir del entorno del proceso: Vitest no lee
-`.env.local`. Con la variable puesta, la suite de la API corre **145 tests y no
-saltea ninguno**; sin ella, saltea los 14 que necesitan base.
+`.env.local`. Con la variable puesta, la suite de la API corre **180 tests y no
+saltea ninguno**; sin ella, saltea los 18 que necesitan base.
 
 Si tu Postgres no es el del `compose.yaml`, creá `bid_test` a mano: los tests
 aplican las migraciones solos.
@@ -236,7 +241,7 @@ apps/api/
 ├── drizzle/            Migraciones SQL versionadas
 └── src/
     ├── app.ts          App Hono: CORS, errores y rutas
-    ├── routes/         ideas, messages, extractions, proposals, account, demo
+    ├── routes/         ideas, nodes, versions, steps, messages, extractions, proposals, account, demo
     ├── application/    Casos de uso y puertos
     └── infrastructure/ Auth (Better Auth), base de datos (Drizzle) e IA
 
