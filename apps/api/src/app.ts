@@ -9,8 +9,10 @@ import {
   VersionNotFoundError,
 } from "./application/errors";
 import { getAuth } from "./infrastructure/auth/auth";
+import { isDemoAccount } from "./infrastructure/auth/demo-account";
 import { statusFor } from "./lib/errors";
 import { HttpError } from "./lib/http-error";
+import { getCurrentUser } from "./lib/session";
 import { account } from "./routes/account";
 import { demo } from "./routes/demo";
 import { ideas } from "./routes/ideas";
@@ -58,6 +60,48 @@ if (process.env.NODE_ENV === "development") {
 app.onError((error) => errorToResponse(error));
 
 app.get("/api/health", (context) => context.json({ ok: true }));
+
+/**
+ * Better Auth endpoints that change the account itself.
+ *
+ * The demo account is public (its credentials are on the sign-in page), so any
+ * of these would let a visitor rename it, take it over through its email, lock
+ * it with a new password or delete it. Hiding the forms in the client is not
+ * enough: the endpoints stay reachable with `curl` and the demo would be broken
+ * for the next person.
+ */
+const READ_ONLY_FOR_DEMO_AUTH_PATHS = new Set([
+  "/update-user",
+  "/change-email",
+  "/change-password",
+  "/set-password",
+  "/delete-user",
+  "/unlink-account",
+]);
+
+app.use("/api/auth/*", async (context, next) => {
+  const path = new URL(context.req.url).pathname.replace(/^\/api\/auth/, "");
+
+  if (!READ_ONLY_FOR_DEMO_AUTH_PATHS.has(path)) {
+    return next();
+  }
+
+  const user = await getCurrentUser(context);
+
+  if (user && isDemoAccount(user.email)) {
+    // Better Auth's own error shape, so its client surfaces the code and the
+    // message instead of a generic failure.
+    return context.json(
+      {
+        code: "DEMO_ACCOUNT_READ_ONLY",
+        message: "La cuenta demo es de solo lectura.",
+      },
+      403,
+    );
+  }
+
+  return next();
+});
 
 /**
  * Better Auth owns its whole subtree: sign-in, sign-up, session, password
