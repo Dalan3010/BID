@@ -21,6 +21,12 @@ import { postExtraction } from "./extractions";
 import { postMessage } from "./messages";
 import { patchNode, postNode } from "./nodes";
 import { postProposal } from "./proposals";
+import {
+  getSteps,
+  patchStep,
+  postStepProposals,
+  postSteps,
+} from "./steps";
 import { getVersionDiff, getVersions } from "./versions";
 
 /**
@@ -130,3 +136,9 @@ ideas.post("/:id/extractions", postExtraction);
 
 /** The user accepts, corrects or discards a proposal. */
 ideas.post("/:id/proposals/:nodeId", postProposal);
+
+/** The arranque: the coach's step list, its proposals and their state. */
+ideas.get("/:id/steps", getSteps);
+ideas.post("/:id/steps", postSteps);
+ideas.post("/:id/steps/proposals", postStepProposals);
+ideas.patch("/:id/steps/:stepId", patchStep);

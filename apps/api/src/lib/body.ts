@@ -49,6 +49,24 @@ export const updateIdeaSchema = z
   })
   .refine((body) => body.title !== undefined || body.summary !== undefined);
 
+/** Steps the person accepted from the planner's proposals. */
+export const addStepsSchema = z.object({
+  steps: z
+    .array(
+      z.object({
+        title: z.string().trim().min(1).max(160),
+        detail: z.string().trim().min(1).max(600).optional(),
+      }),
+    )
+    .min(1)
+    .max(8),
+});
+
+/** Completes or reopens one step of the arranque. */
+export const stepStatusSchema = z.object({
+  status: z.enum(["open", "done"]),
+});
+
 /**
  * Reads and validates a JSON body.
  *

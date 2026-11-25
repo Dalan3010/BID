@@ -2,6 +2,7 @@ import type { Context } from "hono";
 
 import { sendMessage } from "../application/use-cases";
 import {
+  arranqueStepRepository,
   coachModel,
   ideaRepository,
   messageRepository,
@@ -31,6 +32,7 @@ export async function postMessage(context: Context): Promise<Response> {
         ideas: ideaRepository(),
         messages: messageRepository(),
         model: coachModel(),
+        steps: arranqueStepRepository(),
       },
       { ideaId, ownerId: user.id, content: body.content },
     );

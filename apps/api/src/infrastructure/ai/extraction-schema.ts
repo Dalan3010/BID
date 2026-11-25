@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { NODE_TYPES } from "@bid/core";
 
+import { unwrapJson } from "./json";
+
 /**
  * The schema of what the extractor returns.
  *
@@ -53,30 +55,4 @@ export function parseExtraction(raw: string): Extraction | null {
   }
 
   return parsed.data;
-}
-
-/**
- * Finds the JSON object inside a text that may contain more than JSON.
- */
-function unwrapJson(raw: string): unknown {
-  const trimmed = raw.trim();
-
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    // Fall through: the answer may be wrapped.
-  }
-
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-
-  if (start === -1 || end <= start) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(trimmed.slice(start, end + 1));
-  } catch {
-    return null;
-  }
 }

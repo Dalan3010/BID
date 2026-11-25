@@ -1,11 +1,17 @@
+import { buildSystemPrompt } from "../../application/use-cases/build-coach-context";
 import type { CoachModel } from "../../application/ports/coach-model";
 import type { Extractor } from "../../application/ports/extractor";
-import { FallbackCoachModel, FallbackExtractor } from "./fallback";
+import type { StepPlanner } from "../../application/ports/step-planner";
+import type { WebSearch } from "../../application/ports/web-search";
+import { FallbackCoachModel, FallbackExtractor, FallbackStepPlanner } from "./fallback";
 import { GoogleCoachModel } from "./google-coach-model";
+import { GoogleStepPlanner } from "./google-step-planner";
 import { ProviderCoachModel, buildProviderMessages } from "./provider-coach-model";
 import { ProviderExtractor } from "./provider-extractor";
 import { RehearsalCoachModel } from "./rehearsal-coach-model";
 import { RehearsalExtractor } from "./rehearsal-extractor";
+import { RehearsalStepPlanner } from "./rehearsal-step-planner";
+import { TavilyWebSearch } from "./tavily-web-search";
 
 /**
  * Which model the application talks to.
@@ -26,6 +32,31 @@ export function resolveCoachProvider(): CoachProvider {
 }
 
 /**
+ * The web search the live coach grounds its answers with.
+ *
+ * `TAVILY_API_KEY` is what turns it on. Without the key there is no search:
+ * the coach keeps the provider's built-in grounding, which is exactly the
+ * behaviour the app had before (D-B).
+ */
+export function createWebSearch(
+  apiKey: string | undefined = process.env.TAVILY_API_KEY,
+): WebSearch | undefined {
+  if (!apiKey) {
+    // Say it once, at startup: a coach that cannot search still answers, but
+    // the person must be able to tell why no source ever appears. Without this
+    // line the difference was invisible in the logs (the 429 spent a whole day
+    // looking like a model problem).
+    console.info(
+      "[coach] sin TAVILY_API_KEY: el coach responde sin búsqueda web ni fuentes.",
+    );
+    return undefined;
+  }
+
+  console.info("[coach] búsqueda web propia activa (Tavily).");
+  return new TavilyWebSearch(apiKey);
+}
+
+/**
  * The coach the application uses.
  *
  * The live implementation needs a provider client, which does not exist yet.
@@ -42,16 +73,16 @@ export function createCoachModel(options: {
     if (options.providerClient) {
       return new ProviderCoachModel(options.providerClient, {
         build: (input) =>
-          buildProviderMessages(
-            `Sos un coach que ayuda a un emprendedor a cimentar su idea de negocio "${input.title}".`,
-            input,
-          ),
+          buildProviderMessages(buildSystemPrompt(input.title), input),
       });
     }
 
     // The script stays behind the provider (RF-72): a failure or an exhausted
     // quota answers from the script instead of cutting the walkthrough.
-    return new FallbackCoachModel(new GoogleCoachModel(), new RehearsalCoachModel());
+    return new FallbackCoachModel(
+      new GoogleCoachModel(undefined, createWebSearch()),
+      new RehearsalCoachModel(),
+    );
   }
 
   return new RehearsalCoachModel();
@@ -71,4 +102,23 @@ export function createExtractor(options: {
   }
 
   return new RehearsalExtractor();
+}
+
+/**
+ * The step planner the application uses.
+ *
+ * It follows the coach's and the extractor's rule: the same provider decides,
+ * so the demo cannot end up with a scripted coach and a live planner.
+ */
+export function createStepPlanner(options: {
+  readonly provider?: CoachProvider;
+}): StepPlanner {
+  if (options.provider === "live") {
+    return new FallbackStepPlanner(
+      new GoogleStepPlanner(),
+      new RehearsalStepPlanner(),
+    );
+  }
+
+  return new RehearsalStepPlanner();
 }

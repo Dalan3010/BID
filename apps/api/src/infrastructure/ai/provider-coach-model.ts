@@ -1,4 +1,5 @@
 import type { CoachModel, CoachRequest } from "../../application/ports/coach-model";
+import { stepAlreadyRaised } from "../../application/ports/coach-model";
 
 /**
  * The model that talks to a real provider.
@@ -69,10 +70,6 @@ export function buildProviderMessages(
     content: message.content,
   }));
 
-  const focus = input.agenda[0]
-    ? `La siguiente dimensión a trabajar es "${input.agenda[0]}". Hacé UNA pregunta sobre ella.`
-    : "La idea está completa. Preguntá si quiere empezar otra.";
-
   const confirmedBlock: ProviderMessage[] =
     confirmed.length > 0
       ? [
@@ -87,6 +84,32 @@ export function buildProviderMessages(
     { role: "system", content: systemPrompt },
     ...confirmedBlock,
     ...conversation,
-    { role: "user", content: focus },
+    { role: "user", content: focusFor(input) },
   ];
+}
+
+/**
+ * The instruction that tells the coach what this turn is about.
+ *
+ * Three states, one rule (D6): the domain picks the subject — an open
+ * dimension, the next arranque step, or the pivot into the arranque — and the
+ * coach phrases exactly one question about it.
+ */
+function focusFor(input: CoachRequest): string {
+  if (input.agenda[0]) {
+    return `La siguiente dimensión a trabajar es "${input.agenda[0]}". Haz una sola pregunta sobre ella.`;
+  }
+
+  if (input.nextStep) {
+    // Two states on the same step: the first turn asks about it; once the person
+    // answered, the coach works it instead of repeating itself — that repetition
+    // is what left the accompaniment frozen.
+    if (stepAlreadyRaised(input)) {
+      return `El paso del arranque es "${input.nextStep.title}" y ya lo hablaron: no repitas la pregunta. Responde a lo último que te dijo, dale un consejo concreto para darlo (si necesita datos reales, búscalos y cita los enlaces) y recuérdale en una frase que, cuando lo tenga, lo marque como hecho para pasar al siguiente.`;
+    }
+
+    return `El siguiente paso del arranque es "${input.nextStep.title}". Haz una sola pregunta que ayude a darlo, y si necesita datos reales, úsalos y cita los enlaces.`;
+  }
+
+  return "La idea está completa y todavía no hay pasos. Guiala al arranque: cuéntale que puedes proponerle los primeros pasos y que los acepta o descarta en «El arranque», de a uno.";
 }

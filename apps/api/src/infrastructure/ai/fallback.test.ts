@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type { CoachModel, CoachRequest } from "../../application/ports/coach-model";
 import type { Extractor, ExtractionRequest } from "../../application/ports/extractor";
-import { FallbackCoachModel, FallbackExtractor } from "./fallback";
+import type { PlanningRequest, StepPlanner } from "../../application/ports/step-planner";
+import { FallbackCoachModel, FallbackExtractor, FallbackStepPlanner } from "./fallback";
 
 const REQUEST: CoachRequest = {
   idea: { ideaId: "idea-1", nodes: [] },
@@ -12,6 +13,12 @@ const REQUEST: CoachRequest = {
 };
 
 const EXTRACTION: ExtractionRequest = {
+  idea: { ideaId: "idea-1", nodes: [] },
+  title: "Idea",
+  messages: [],
+};
+
+const PLANNING: PlanningRequest = {
   idea: { ideaId: "idea-1", nodes: [] },
   title: "Idea",
   messages: [],
@@ -135,5 +142,52 @@ describe("FallbackExtractor", () => {
     );
 
     expect(await extractor.extract(EXTRACTION)).toBe('{"proposals":[]}');
+  });
+});
+
+describe("FallbackStepPlanner", () => {
+  const scripted: StepPlanner = {
+    plan: async () => '{"steps":[{"title":"Guion"}]}',
+  };
+
+  it("uses the provider while it answers", async () => {
+    const planner = new FallbackStepPlanner(
+      { plan: async () => '{"steps":[{"title":"Live"}]}' },
+      scripted,
+      silent,
+    );
+
+    expect(await planner.plan(PLANNING)).toBe('{"steps":[{"title":"Live"}]}');
+  });
+
+  it("plans from the script when the provider fails", async () => {
+    const planner = new FallbackStepPlanner(
+      {
+        plan: async () => {
+          throw new Error("quota exceeded");
+        },
+      },
+      scripted,
+      silent,
+    );
+
+    expect(await planner.plan(PLANNING)).toBe('{"steps":[{"title":"Guion"}]}');
+  });
+
+  it("reports the provider failure", async () => {
+    const reported: unknown[] = [];
+    const planner = new FallbackStepPlanner(
+      {
+        plan: async () => {
+          throw new Error("quota exceeded");
+        },
+      },
+      scripted,
+      (error) => reported.push(error),
+    );
+
+    await planner.plan(PLANNING);
+
+    expect(reported).toHaveLength(1);
   });
 });

@@ -115,6 +115,19 @@ export class VersionNotFoundError extends Error {
   }
 }
 
+/** Raised when a requested arranque step does not exist for the idea. */
+export class StepNotFoundError extends Error {
+  readonly ideaId: string;
+  readonly stepId: string;
+
+  constructor(ideaId: string, stepId: string) {
+    super(`Step not found: idea ${ideaId}, step ${stepId}`);
+    this.name = "StepNotFoundError";
+    this.ideaId = ideaId;
+    this.stepId = stepId;
+  }
+}
+
 /**
  * Raised when an account other than the public demo asks to reset the demo.
  *

@@ -152,7 +152,28 @@ function seed() {
     },
   ];
 
-  return { signedIn: false, user: { ...DEMO_USER }, ideas, nodes, messages };
+  // The demo idea is complete (all ten dimensions validated), so it is in the
+  // arranque: its step list ships seeded so the panel can be reviewed.
+  const steps = [
+    {
+      id: "step_clientes",
+      ideaId: "idea_panaderia",
+      title: "Conseguir tus primeros tres clientes de prueba",
+      detail: "Usa los canales que definiste y ofrece una versión piloto.",
+      status: "done",
+      createdAt: "2026-11-11T09:00:00.000Z",
+    },
+    {
+      id: "step_precio",
+      ideaId: "idea_panaderia",
+      title: "Fijar el precio de la suscripción semanal",
+      detail: "Un número concreto que puedas cobrar esta semana.",
+      status: "open",
+      createdAt: "2026-11-11T10:30:00.000Z",
+    },
+  ];
+
+  return { signedIn: false, user: { ...DEMO_USER }, ideas, nodes, messages, steps };
 }
 
 let state = seed();
@@ -168,7 +189,7 @@ function corsHeaders(origin) {
   return {
     "access-control-allow-origin": allowed,
     "access-control-allow-credentials": "true",
-    "access-control-allow-methods": "GET, POST, DELETE, OPTIONS",
+    "access-control-allow-methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "access-control-allow-headers": "content-type",
     vary: "origin",
   };
@@ -231,6 +252,10 @@ const NODE_TYPES = [
   "risks",
 ];
 
+function stepsOf(ideaId) {
+  return state.steps.filter((step) => step.ideaId === ideaId);
+}
+
 function graphOf(ideaId) {
   return { ideaId, nodes: state.nodes.filter((node) => node.ideaId === ideaId) };
 }
@@ -265,20 +290,47 @@ function progressOf(idea) {
 
 const COACH_REPLY = (idea) => {
   const next = gapsOf(idea.id)[0];
-  const focus = next
-    ? {
-        costs: "los costos reales de una unidad",
-        competition: "quién más resuelve esto y por qué elegirte",
-        metrics: "cómo sabrás en 30 días si está funcionando",
-        problem: "el problema exacto",
-        segment: "para quién es y para quién no",
-        value_proposition: "qué prometes en una frase",
-        solution: "cómo lo entregas",
-        channels: "dónde te encuentran",
-        revenue: "cómo entra el dinero",
-        risks: "qué te tumba si sale mal",
-      }[next.type]
-    : "el siguiente paso del plan";
+
+  // The plan is complete: the real API works the next open step of the
+  // arranque, or guides the person to the panel when there is none yet.
+  if (!next) {
+    const step = state.steps.find(
+      (item) => item.ideaId === idea.id && item.status === "open",
+    );
+
+    if (step) {
+      // Mirror of the real API: the turn being answered is the last user
+      // message, so only earlier ones tell whether the step was already raised.
+      // Repeating the same question every turn is what froze the chat.
+      const userMessages = state.messages.filter(
+        (item) => item.ideaId === idea.id && item.role === "user",
+      );
+      const raised = userMessages
+        .slice(0, -1)
+        .some((item) => item.createdAt > step.createdAt);
+
+      if (raised) {
+        return `Seguimos con «${step.title}».${step.detail ? ` ${step.detail}` : ""} Contame cómo va y, cuando lo veas listo, márcalo como hecho para pasar al siguiente paso.`;
+      }
+
+      return `Vamos con el paso que sigue: «${step.title}». ¿Qué necesitas para darlo esta semana? Si te sirve, te busco datos concretos.`;
+    }
+
+    return "¡Tu plan ya está completo! Ahora, a arrancar: pídeme los primeros pasos en «El arranque» y acepta los que te sirvan; después los trabajamos de a uno.";
+  }
+
+  const focus = {
+    costs: "los costos reales de una unidad",
+    competition: "quién más resuelve esto y por qué elegirte",
+    metrics: "cómo sabrás en 30 días si está funcionando",
+    problem: "el problema exacto",
+    segment: "para quién es y para quién no",
+    value_proposition: "qué prometes en una frase",
+    solution: "cómo lo entregas",
+    channels: "dónde te encuentran",
+    revenue: "cómo entra el dinero",
+    risks: "qué te tumba si sale mal",
+  }[next.type];
 
   return `Tomo nota. Antes de avanzar, aterricemos ${focus}: ¿qué número o hecho concreto lo demuestra? Si no puedes medirlo, todavía es una intención.`;
 };
@@ -504,6 +556,100 @@ async function handleApi(req, res, url) {
 
     Object.assign(node, { source, content, confidence: null, updatedAt: now });
     return sendJson(res, 200, { source, node });
+  }
+
+  const stepsMatch = path.match(/^\/api\/ideas\/([^/]+)\/steps$/);
+
+  if (stepsMatch && req.method === "GET") {
+    const idea = state.ideas.find((item) => item.id === decodeURIComponent(stepsMatch[1]));
+    if (!idea) return sendJson(res, 404, { error: "Esa idea no existe." });
+
+    return sendJson(res, 200, { steps: stepsOf(idea.id) });
+  }
+
+  if (stepsMatch && req.method === "POST") {
+    const idea = state.ideas.find((item) => item.id === decodeURIComponent(stepsMatch[1]));
+    if (!idea) return sendJson(res, 404, { error: "Esa idea no existe." });
+
+    const body = await readBody(req);
+    const incoming = Array.isArray(body.steps) ? body.steps : [];
+    const clean = incoming
+      .map((step) => ({
+        title: String(step?.title ?? "").trim().slice(0, 160),
+        detail:
+          typeof step?.detail === "string" && step.detail.trim()
+            ? step.detail.trim().slice(0, 600)
+            : null,
+      }))
+      .filter((step) => step.title);
+
+    if (clean.length === 0 || clean.length > 8) {
+      return sendJson(res, 422, { error: "Los pasos necesitan título (entre 1 y 8)." });
+    }
+
+    const now = new Date().toISOString();
+    const created = clean.map((step, index) => ({
+      id: `step_${state.steps.length + 1 + index}_${Date.now().toString(36)}`,
+      ideaId: idea.id,
+      title: step.title,
+      detail: step.detail,
+      status: "open",
+      createdAt: now,
+    }));
+    state.steps.push(...created);
+
+    return sendJson(res, 201, { steps: stepsOf(idea.id) });
+  }
+
+  const stepProposalsMatch = path.match(
+    /^\/api\/ideas\/([^/]+)\/steps\/proposals$/,
+  );
+  if (stepProposalsMatch && req.method === "POST") {
+    const idea = state.ideas.find(
+      (item) => item.id === decodeURIComponent(stepProposalsMatch[1]),
+    );
+    if (!idea) return sendJson(res, 404, { error: "Esa idea no existe." });
+
+    // The scripted planner: the same steps the rehearsal planner proposes in
+    // the real API. Nothing is persisted — the person accepts them or not.
+    return sendJson(res, 200, {
+      proposals: [
+        {
+          title: "Conseguir tus primeros tres clientes de prueba",
+          detail: "Usa los canales que definiste: escríbeles hoy y ofrece una versión piloto.",
+        },
+        {
+          title: "Fijar el precio de la primera versión",
+          detail: "Un número concreto que puedas cobrar mañana, aunque no sea el definitivo.",
+        },
+        {
+          title: "Identificar a tus primeros proveedores",
+          detail: "Dos o tres opciones concretas a las que puedas llamar o escribir esta semana.",
+        },
+        {
+          title: "Definir el lugar de la primera venta",
+          detail: "Dónde va a pasar: un local, online o puerta a puerta.",
+        },
+      ],
+      quotaReached: false,
+    });
+  }
+
+  const stepPatchMatch = path.match(/^\/api\/ideas\/([^/]+)\/steps\/([^/]+)$/);
+  if (stepPatchMatch && req.method === "PATCH") {
+    const step = state.steps.find(
+      (item) =>
+        item.id === decodeURIComponent(stepPatchMatch[2]) &&
+        item.ideaId === decodeURIComponent(stepPatchMatch[1]),
+    );
+
+    const body = await readBody(req);
+    if (step && (body.status === "open" || body.status === "done")) {
+      step.status = body.status;
+      return sendJson(res, 200, { step });
+    }
+
+    return sendJson(res, 404, { error: "No encontramos ese paso." });
   }
 
   if (path === "/api/demo/reset" && req.method === "POST") {

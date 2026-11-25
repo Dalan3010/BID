@@ -1,9 +1,11 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { logger } from "hono/logger";
 
 import {
   DimensionNotEmptyError,
   NotAProposalError,
+  StepNotFoundError,
   VersionNotFoundError,
 } from "./application/errors";
 import { getAuth } from "./infrastructure/auth/auth";
@@ -36,6 +38,12 @@ app.use(
     maxAge: 600,
   }),
 );
+
+// Dev only: one line per request, so a button that "does nothing" can be told
+// apart from a request that never left the browser (or one that failed).
+if (process.env.NODE_ENV === "development") {
+  app.use("*", logger());
+}
 
 /**
  * Turns any thrown error into a response.
@@ -96,6 +104,8 @@ function messageFor(error: unknown, status: number): string {
   }
 
   if (error instanceof VersionNotFoundError) return "No encontramos esa versión.";
+
+  if (error instanceof StepNotFoundError) return "No encontramos ese paso.";
 
   if (status === 403) return "Solo la cuenta demo se puede reiniciar.";
   if (status === 404) return "No encontramos eso.";
