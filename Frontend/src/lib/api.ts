@@ -11,12 +11,14 @@
  *   HTTP) are declared here, never imported from `apps/api`.
  */
 import type {
+  ArranqueStep,
   ChatMessage,
   Gap,
   Idea,
   IdeaGraph,
   IdeaNode,
   NodeType,
+  StepStatus,
 } from "@bid/core";
 
 import { API_URL } from "./config";
@@ -74,6 +76,34 @@ export interface ProposalResolution {
   /** The node after the decision; `null` when discarded. */
   readonly node: IdeaNode | null;
 }
+
+/**
+ * A step the coach proposed for the arranque, as the proposals endpoint
+ * returns it. Nothing here is stored: it becomes a real step only through
+ * `addArranqueSteps`, on the person's explicit accept (product rule 1).
+ */
+export interface StepProposal {
+  readonly title: string;
+  /** Context the coach gave when proposing, when there was any. */
+  readonly detail: string | null;
+}
+
+/** A step the person accepted, ready to be stored. */
+export interface StepDraft {
+  readonly title: string;
+  readonly detail?: string;
+}
+
+/**
+ * The outcome of asking the coach for first steps, already interpreted.
+ *
+ * `quota` is not an error: the limit was reached before the model was called,
+ * so the person is told, never left wondering (RF-24, same shape as
+ * `ExtractionResult`).
+ */
+export type StepProposalResult =
+  | { readonly kind: "ok"; readonly proposals: readonly StepProposal[] }
+  | { readonly kind: "quota" };
 
 /* -------------------------------------------------------------------------- */
 /* Errors                                                                     */
@@ -156,7 +186,7 @@ export function apiUrl(path: string): string {
  */
 export async function request(
   path: string,
-  init: { method?: "GET" | "POST"; body?: unknown; signal?: AbortSignal } = {},
+  init: { method?: "GET" | "POST" | "PATCH"; body?: unknown; signal?: AbortSignal } = {},
 ): Promise<Response> {
   const hasBody = init.body !== undefined;
 
@@ -281,6 +311,74 @@ export async function resolveProposal(
       body: decision === "correct" ? { decision, content } : { decision },
     },
   );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Arranque steps                                                              */
+/* -------------------------------------------------------------------------- */
+
+/** `GET /api/ideas/:id/steps` — the step list, oldest first as delivered. */
+export async function listArranqueSteps(
+  id: string,
+  signal?: AbortSignal,
+): Promise<ArranqueStep[]> {
+  const body = await requestJson<{ steps: ArranqueStep[] }>(
+    `/api/ideas/${encodeURIComponent(id)}/steps`,
+    { signal },
+  );
+  return body.steps;
+}
+
+/**
+ * `POST /api/ideas/:id/steps` — stores the steps the person accepted, in the
+ * order they were seen. Only this call turns a proposal into a real step.
+ */
+export async function addArranqueSteps(
+  id: string,
+  steps: readonly StepDraft[],
+): Promise<ArranqueStep[]> {
+  const body = await requestJson<{ steps: ArranqueStep[] }>(
+    `/api/ideas/${encodeURIComponent(id)}/steps`,
+    { method: "POST", body: { steps } },
+  );
+  return body.steps;
+}
+
+/**
+ * `POST /api/ideas/:id/steps/proposals` — asks the coach for the first
+ * concrete steps. Nothing is persisted by this call: the answer is proposals
+ * the person accepts (or not) through `addArranqueSteps`.
+ *
+ * The quota is announced in the body, not as a 429: `quotaReached: true` means
+ * the model was never called.
+ */
+export async function requestStepProposals(
+  id: string,
+): Promise<StepProposalResult> {
+  const body = await requestJson<{
+    proposals: readonly StepProposal[];
+    quotaReached: boolean;
+  }>(`/api/ideas/${encodeURIComponent(id)}/steps/proposals`, {
+    method: "POST",
+    body: {},
+  });
+
+  return body.quotaReached
+    ? { kind: "quota" }
+    : { kind: "ok", proposals: [...body.proposals] };
+}
+
+/** `PATCH /api/ideas/:id/steps/:stepId` — completes a step, or reopens it. */
+export async function updateArranqueStepStatus(
+  id: string,
+  stepId: string,
+  status: StepStatus,
+): Promise<ArranqueStep> {
+  const body = await requestJson<{ step: ArranqueStep }>(
+    `/api/ideas/${encodeURIComponent(id)}/steps/${encodeURIComponent(stepId)}`,
+    { method: "PATCH", body: { status } },
+  );
+  return body.step;
 }
 
 /** `POST /api/demo/reset` — only the demo account; others get a 403. */

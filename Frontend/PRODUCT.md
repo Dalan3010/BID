@@ -41,6 +41,8 @@ su plan. La IA está en la funcionalidad, no en la identidad visual.
 | Coach respondiendo | "Pensando contigo…" |
 | `completion` | "Plan validado · 40%" |
 | `agenda[0]` | "Siguiente: Ingresos" |
+| `ArranqueStep` / `nextStep` | "El arranque" · "Siguiente: \<paso\>" |
+| `quotaReached` (pasos) | "Llegaste al límite de propuestas disponibles. Puedes seguir conversando con el coach con normalidad." |
 | Conversación vacía | Bienvenida del coach: "Puedes empezar por" + tres temas |
 
 ## Dirección artística

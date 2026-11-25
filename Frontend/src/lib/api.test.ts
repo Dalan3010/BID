@@ -4,13 +4,17 @@ import {
   ApiError,
   GENERIC_ERROR,
   NETWORK_ERROR,
+  addArranqueSteps,
   createIdea,
   errorMessage,
   exportUrl,
+  listArranqueSteps,
   requestExtraction,
+  requestStepProposals,
   resetDemo,
   resolveProposal,
   sendMessage,
+  updateArranqueStepStatus,
 } from "./api";
 import { API_URL } from "./config";
 
@@ -130,6 +134,87 @@ describe("resolveProposal", () => {
     );
     expect(bodies[0]).toEqual({ decision: "correct", content: "Mi texto" });
     expect(bodies[1]).toEqual({ decision: "accept" });
+  });
+});
+
+describe("arranque steps", () => {
+  const stored = {
+    id: "s1",
+    ideaId: "i1",
+    title: "Buscar proveedores de café",
+    detail: "Comparar al menos tres opciones.",
+    status: "open",
+    createdAt: "2026-11-01T10:00:00.000Z",
+  };
+
+  it("lists the steps of an idea, oldest first as delivered", async () => {
+    const spy = mockFetch(json({ steps: [stored] }));
+
+    await expect(listArranqueSteps("i1")).resolves.toEqual([stored]);
+
+    const [url, init] = spy.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(`${API_URL}/api/ideas/i1/steps`);
+    expect(init.method).toBe("GET");
+    expect(init.credentials).toBe("include");
+  });
+
+  it("stores the steps the person accepted, one POST", async () => {
+    const spy = mockFetch(json({ steps: [stored] }, 201));
+
+    await addArranqueSteps("i1", [
+      { title: "Buscar proveedores de café", detail: "Comparar al menos tres opciones." },
+    ]);
+
+    const [url, init] = spy.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(`${API_URL}/api/ideas/i1/steps`);
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual({
+      steps: [{ title: "Buscar proveedores de café", detail: "Comparar al menos tres opciones." }],
+    });
+  });
+
+  it("returns the coach's step proposals without storing anything", async () => {
+    const spy = mockFetch(
+      json({ proposals: [{ title: "Definir proveedores", detail: null }], quotaReached: false }),
+    );
+
+    await expect(requestStepProposals("i1")).resolves.toEqual({
+      kind: "ok",
+      proposals: [{ title: "Definir proveedores", detail: null }],
+    });
+
+    const [url, init] = spy.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(`${API_URL}/api/ideas/i1/steps/proposals`);
+    expect(init.method).toBe("POST");
+  });
+
+  it("turns a reached quota into an announced limit, not an error", async () => {
+    mockFetch(json({ proposals: [], quotaReached: true }));
+
+    await expect(requestStepProposals("i1")).resolves.toEqual({ kind: "quota" });
+  });
+
+  it("throws the API's message when the proposals fail", async () => {
+    mockFetch(json({ error: "No pudimos proponer pasos." }, 502));
+
+    const error = await requestStepProposals("i1").catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).toBe(502);
+    expect((error as ApiError).message).toBe("No pudimos proponer pasos.");
+  });
+
+  it("completes or reopens a step through PATCH", async () => {
+    const spy = mockFetch(json({ step: { ...stored, status: "done" } }));
+
+    const step = await updateArranqueStepStatus("i1", "s1", "done");
+
+    expect(step.status).toBe("done");
+    const [url, init] = spy.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(`${API_URL}/api/ideas/i1/steps/s1`);
+    expect(init.method).toBe("PATCH");
+    expect(init.credentials).toBe("include");
+    expect(JSON.parse(init.body as string)).toEqual({ status: "done" });
   });
 });
 
