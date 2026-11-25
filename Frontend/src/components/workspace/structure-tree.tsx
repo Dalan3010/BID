@@ -58,7 +58,18 @@ function DimensionNode({ data }: NodeProps<DimensionFlowNode>) {
 
 const NODE_TYPES_MAP = { dimension: DimensionNode };
 
-export default function StructureTree({ graph }: { graph: IdeaGraph }) {
+export default function StructureTree({
+  graph,
+  heightClassName = "h-[26rem]",
+}: {
+  graph: IdeaGraph;
+  /**
+   * How tall the diagram is. The panel has a fixed, modest height; "Ampliar"
+   * gives it the screen, because a hierarchy of ten dimensions does not fit in
+   * 26rem and the person cannot read it.
+   */
+  heightClassName?: string;
+}) {
   const { nodes, edges } = useMemo(() => {
     const layout = layoutGraph(graph);
 
@@ -93,7 +104,7 @@ export default function StructureTree({ graph }: { graph: IdeaGraph }) {
   }, [graph]);
 
   return (
-    <div className="bid-flow h-[26rem] border border-line bg-ink-950">
+    <div className={cn("bid-flow border border-line bg-ink-950", heightClassName)}>
       <ReactFlow
         nodes={nodes}
         edges={edges}

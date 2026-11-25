@@ -458,16 +458,25 @@ Implementado:
 - Precedencia aplicada en el caso de uso: un nodo `edited` nunca se sobrescribe
   y una propuesta pendiente no se apila con otra de la misma dimensión.
 - Cuota de extracciones con aviso explícito antes de cortar.
-- 84 tests: proyecciones, regla de merge, layout del árbol, casos de uso con
-  repositorio en memoria, repositorio real contra Postgres, esquema de
-  autenticación, turnos de conversación y extracción.
+- Autoría manual de nodos, CRUD de ideas y versiones con diff: el backend
+  completo sin IA.
+- Arranque: al validar las diez dimensiones, el coach conduce una lista de
+  pasos (`ArranqueStep`, agenda pura `nextStep`) con respaldo en la web
+  (grounding de Google Search vía AI SDK), guion de respaldo (RF-72), cuota
+  visible (RF-24) y un `StepPlanner` detrás de un puerto con validación Zod.
+  Los pasos viven fuera del plan: la persona los acepta o los descarta.
+- 322 tests verdes entre core, API y cliente (18 de integración salteados sin
+  `TEST_DATABASE_URL`): proyecciones, regla de merge, layout del árbol,
+  casos de uso con repositorio en memoria, repositorio real contra Postgres,
+  esquema de autenticación, turnos de conversación, extracción y arranque.
 
 Deliberadamente **no** implementado todavía:
 
-- Historial y diff entre versiones (Fase 6).
-- Proveedor de modelo configurado: la app responde desde el guion.
 - Rate limiting (RNF-03, RNF-04).
 - Proveedor de correo: los enlaces se escriben en el log del servidor.
+
+El historial con diff y el proveedor configurado ya están implementados y
+salieron de esta lista; el guion quedó como respaldo del proveedor (RF-72).
 
 El orden de construcción está definido en `docs/roadmap.md`: primero lo visible
 con datos fijos, la IA al final.

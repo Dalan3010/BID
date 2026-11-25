@@ -18,12 +18,15 @@ import { toPercent } from "@/lib/format";
 import { prefersReducedMotion } from "@/lib/motion";
 import { hasSeenTour, markTourSeen } from "@/lib/onboarding";
 
+import { ArranquePanel } from "./arranque-panel";
+import { ArranqueStrip } from "./arranque-strip";
 import { Composer } from "./composer";
 import { Conversation } from "./conversation";
 import { messageAnchor } from "./message-entry";
 import { PlanPanel } from "./plan-panel";
 import { ProposalTray } from "./proposal-tray";
 import { useOnline } from "./use-online";
+import { useArranqueSteps } from "./use-arranque-steps";
 import { WorkspaceTour } from "./workspace-tour";
 import { useWorkspace } from "./use-workspace";
 
@@ -68,6 +71,23 @@ export function WorkspaceView({ ideaId }: { ideaId: string }) {
     });
   }
 
+  /**
+   * Brings the arranque into view from the strip above the composer.
+   *
+   * On a narrow screen the steps live in the other pane, so the pane has to
+   * change; on a wide one both panes are already visible and switching panes
+   * does nothing at all — which is why the button looked dead. Scrolling to the
+   * section is what the person asked for, in both layouts.
+   */
+  function revealArranque() {
+    showPane("plan");
+    requestAnimationFrame(() => {
+      document
+        .getElementById("arranque-title")
+        ?.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+  }
+
   // Shortcuts (see `lib/shortcuts.ts`). Alt+digit also works while typing,
   // because it is not text.
   const ready = load.status === "ready";
@@ -103,6 +123,12 @@ export function WorkspaceView({ ideaId }: { ideaId: string }) {
     setSeed({ text: topic.starter, at: Date.now() });
   }
   const percent = idea ? toPercent(completionRatio({ ideaId: idea.id, nodes })) : 0;
+
+  // The arranque state is owned here, not inside the panel: the chat and the
+  // step list have to read the same steps, or the person sees one "current
+  // step" in the conversation and another in the panel. It loads only once the
+  // plan is complete (the accompaniment stage).
+  const arranque = useArranqueSteps(ideaId, { enabled: percent === 100 });
 
   function reviewProposals() {
     setPane("conversation");
@@ -287,6 +313,10 @@ export function WorkspaceView({ ideaId }: { ideaId: string }) {
             />
           </div>
 
+          {percent === 100 ? (
+            <ArranqueStrip arranque={arranque} onShowPlan={revealArranque} />
+          ) : null}
+
           <Composer
             ideaId={ideaId}
             phase={phase}
@@ -315,6 +345,10 @@ export function WorkspaceView({ ideaId }: { ideaId: string }) {
             onTrace={traceAction}
             messages={messages}
           />
+
+          {/* The arranque starts where the plan ends (S1): its steps are the
+              accompaniment, and they never enter the plan above. */}
+          {percent === 100 ? <ArranquePanel arranque={arranque} /> : null}
         </aside>
       </div>
     </div>

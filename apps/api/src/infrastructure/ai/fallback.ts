@@ -1,5 +1,9 @@
 import type { CoachModel, CoachRequest } from "../../application/ports/coach-model";
 import type { Extractor, ExtractionRequest } from "../../application/ports/extractor";
+import type {
+  PlanningRequest,
+  StepPlanner,
+} from "../../application/ports/step-planner";
 
 /** Where a provider failure is reported. The demo keeps going either way. */
 export type FailureReporter = (error: unknown) => void;
@@ -76,6 +80,31 @@ export class FallbackExtractor implements Extractor {
       this.report(error);
 
       return this.fallback.extract(input);
+    }
+  }
+}
+
+/**
+ * The live step planner with the script behind it (RF-72).
+ *
+ * The plan is asked once, when the person enters the arranque: if the provider
+ * fails there, the scripted planner answers, so the walkthrough still gets a
+ * step list to work on.
+ */
+export class FallbackStepPlanner implements StepPlanner {
+  constructor(
+    private readonly primary: StepPlanner,
+    private readonly fallback: StepPlanner,
+    private readonly report: FailureReporter = logFailure,
+  ) {}
+
+  async plan(input: PlanningRequest): Promise<string> {
+    try {
+      return await this.primary.plan(input);
+    } catch (error) {
+      this.report(error);
+
+      return this.fallback.plan(input);
     }
   }
 }

@@ -15,6 +15,13 @@
       "when": 1793664417387,
       "tag": "0001_violet_micromacro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795069960105,
+      "tag": "0002_curious_husk",
+      "breakpoints": true
     }
   ]
 }

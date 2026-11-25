@@ -1,4 +1,5 @@
 import type { ChatMessage, NewChatMessage } from "@bid/core";
+import { nextTimestamp } from "./clock";
 import type { MessageRepository } from "../ports/message-repository";
 
 /**
@@ -29,7 +30,7 @@ export class InMemoryMessageRepository implements MessageRepository {
       ideaId: message.ideaId,
       role: message.role,
       content: message.content,
-      createdAt: new Date().toISOString(),
+      createdAt: nextTimestamp(),
     };
 
     const list = this.byIdea.get(message.ideaId) ?? [];

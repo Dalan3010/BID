@@ -11,6 +11,7 @@ import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 import { ProgressRing } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildDimensionViews } from "@/lib/dimensions";
@@ -54,6 +55,8 @@ export function PlanPanel({
   const [treeOpen, setTreeOpen] = useState(false);
   const [canvasOpen, setCanvasOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(false);
+  /** The hierarchy, full screen: the panel is too narrow to read it. */
+  const [treeExpanded, setTreeExpanded] = useState(false);
 
   const graph = useMemo(() => ({ ideaId: idea.id, nodes }), [idea.id, nodes]);
   const views = useMemo(() => buildDimensionViews(nodes), [nodes]);
@@ -151,10 +154,31 @@ export function PlanPanel({
                 validada. Punteado: abierta o por revisar.
               </p>
               <StructureTree graph={graph} />
+              <div className="mt-3 flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setTreeExpanded(true)}
+                  className="print:hidden"
+                >
+                  Ampliar
+                </Button>
+              </div>
             </>
           ) : null}
         </div>
       </section>
+      <Modal
+        open={treeExpanded}
+        onClose={() => setTreeExpanded(false)}
+        title="Estructura técnica"
+        description="La misma idea vista como jerarquía: de qué depende cada decisión."
+        size="full"
+        className="print:hidden"
+      >
+        <StructureTree graph={graph} heightClassName="h-[calc(100dvh-14rem)] min-h-80" />
+      </Modal>
+
       <CanvasDialog
         open={canvasOpen}
         onClose={() => setCanvasOpen(false)}

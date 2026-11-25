@@ -1,7 +1,9 @@
-import type { ChatMessage } from "@bid/core";
+import type { ArranqueStep, ChatMessage } from "@bid/core";
+import { nextStep as nextOpenStep } from "@bid/core";
 import type { CoachModel } from "../ports/coach-model";
 import type { MessageRepository } from "../ports/message-repository";
 import type { IdeaRepository } from "../ports/idea-repository";
+import type { ArranqueStepRepository } from "../ports/arranque-step-repository";
 import { IdeaNotFoundError } from "../errors";
 import {
   buildCoachRequest,
@@ -22,7 +24,6 @@ export interface SendMessageInput {
  * complete text is what gets stored; the stream is what the browser shows.
  */
 export interface SendMessageResult {
-  readonly reply: string;
   readonly stream: AsyncIterable<string>;
 }
 
@@ -34,6 +35,9 @@ export interface SendMessageResult {
  * 1. The user's message is stored **before** the model is called. If the
  *    provider fails, the message is still there and the user can retry without
  *    losing the conversation (RF-25).
+ * 1b. The **first chunk** is awaited before answering: a model that fails
+ *    immediately still becomes an honest 502, while the rest of the answer
+ *    streams as it is written instead of arriving all at once at the end.
  * 2. The graph is loaded **for the owner**: another user's idea is not found.
  * 3. The agenda is computed with `findGaps`, the same projection the views use.
  */
@@ -42,6 +46,7 @@ export async function sendMessage(
     readonly ideas: IdeaRepository;
     readonly messages: MessageRepository;
     readonly model: CoachModel;
+    readonly steps: ArranqueStepRepository;
   },
   input: SendMessageInput,
 ): Promise<SendMessageResult> {
@@ -74,72 +79,64 @@ export async function sendMessage(
     CONTEXT_MESSAGE_LIMIT,
   );
 
+  const agenda = coachAgenda(graph);
+
+  // When the ten dimensions are validated, the coach's subject is the next
+  // open step of the arranque (D6: the domain decides what to work on next,
+  // the coach only phrases it — and grounds it in the web when it helps).
+  const nextStep: ArranqueStep | undefined =
+    agenda.length === 0
+      ? nextOpenStep(await dependencies.steps.listByIdea(input.ideaId)) ??
+        undefined
+      : undefined;
+
   const request = buildCoachRequest({
     idea: graph,
     title: idea.title,
     messages: recent,
-    agenda: coachAgenda(graph),
+    agenda,
+    nextStep,
   });
 
-  const reply = await streamToText(
-    dependencies.model.stream(request),
-    async (text) => {
-      await dependencies.messages.add({
-        ideaId: input.ideaId,
-        role: "assistant",
-        content: text,
-      });
-    },
-  );
+  const source = dependencies.model.stream(request)[Symbol.asyncIterator]();
 
-  return { reply, stream: replay(reply) };
-}
+  // The first chunk decides between "the model failed" (a clean 502 before any
+  // byte was sent) and "the answer is on its way".
+  const first = await source.next();
 
-/**
- * Consumes a stream and stores the complete answer at the end.
- *
- * The assistant's message is stored once, with the whole text, and not chunk by
- * chunk: a half-written answer in the database is worse than none.
- */
-async function streamToText(
-  stream: AsyncIterable<string>,
-  onComplete: (text: string) => Promise<void>,
-): Promise<string> {
-  let text = "";
-
-  for await (const chunk of stream) {
-    text += chunk;
-  }
-
-  await onComplete(text.trim());
-
-  return text.trim();
-}
-
-/**
- * Replays a finished text as a stream, word by word.
- *
- * The answer is already computed when the route returns, so the browser gets
- * the same text in the same shape. The point of replaying it is that the client
- * code is the same in both cases: it reads a stream, it does not know whether
- * the words came from a model or from the local answer.
- *
- * The pause between words is what makes the answer arrive at a human pace.
- */
-function replay(text: string): AsyncIterable<string> {
   return {
-    async *[Symbol.asyncIterator]() {
-      for (const word of text.split(" ")) {
-        yield `${word} `;
-        await sleep(24);
-      }
-    },
+    stream: store(
+      dependencies.messages,
+      input.ideaId,
+      first,
+      source,
+    ),
   };
 }
 
-/** A pause, so the answer arrives at a human pace. */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+/**
+ * Passes the answer through while it is written, and stores it at the end.
+ *
+ * Streaming is the whole point: a grounded turn — the model searching the web
+ * before answering — takes several seconds, and buffering them left the person
+ * looking at a still screen. The assistant's message is still stored **once**,
+ * with the complete text: a half-written answer in the database is worse than
+ * none (RF-25).
+ */
+async function* store(
+  messages: MessageRepository,
+  ideaId: string,
+  first: IteratorResult<string>,
+  source: AsyncIterator<string>,
+): AsyncIterable<string> {
+  let text = "";
+
+  for (let step = first; !step.done; step = await source.next()) {
+    text += step.value;
+    yield step.value;
+  }
+
+  await messages.add({ ideaId, role: "assistant", content: text.trim() });
 }
 
 /** The conversation of one idea, oldest first. */

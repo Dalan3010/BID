@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 import { getDatabase } from "../db/client";
 import * as schema from "../db/schema";
+import { isDemoAccount } from "./demo-account";
 
 /**
  * Better Auth instance.
@@ -161,6 +162,14 @@ function createAuth() {
        * SMTP or Resend transport is a single change in this file.
        */
       sendResetPassword: async ({ user, token }) => {
+        // A reset would hand the shared demo account to whoever asked for it.
+        // The request still succeeds (the reply must not reveal which accounts
+        // exist), but no link is ever delivered or logged.
+        if (isDemoAccount(user.email)) {
+          console.warn("[auth] password reset ignored: the demo account is read-only.");
+          return;
+        }
+
         // The page that asks for the new password lives in the client, so the
         // link is built here instead of using the one Better Auth would point
         // at its own base URL.

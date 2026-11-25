@@ -1,4 +1,5 @@
 import type { CoachModel, CoachRequest } from "../../application/ports/coach-model";
+import { stepAlreadyRaised } from "../../application/ports/coach-model";
 import { NODE_TYPES, type NodeType } from "@bid/core";
 
 /**
@@ -25,19 +26,19 @@ export class RehearsalCoachModel implements CoachModel {
     segment:
       "Ahora el segmento. ¿Quién es exactamente ese cliente? Cuanto más concreto lo digas, mejor: edad, tamaño, dónde está, qué hace hoy.",
     value_proposition:
-      "La propuesta de valor. ¿Por qué te eligen a vos y no a otra opción? Si lo decís en una frase, ya tenés algo.",
+      "La propuesta de valor. ¿Por qué te eligen y no a otra opción? Si lo dices en una frase, ya tienes algo.",
     solution:
-      "La solución. ¿Qué entregás exactamente para resolver ese problema? Puede ser un producto, un servicio o una forma de hacer algo.",
+      "La solución. ¿Qué entregas exactamente para resolver ese problema? Puede ser un producto, un servicio o una forma de hacer algo.",
     channels:
-      "Los canales. ¿Cómo llega el cliente hasta vos? Escribí los caminos que ya probaste o que te parecen más realistas.",
+      "Los canales. ¿Cómo llega el cliente hasta ti? Escribe los caminos que ya probaste o que te parecen más realistas.",
     revenue:
       "Los ingresos. ¿Cómo entra el dinero? Puede ser una suscripción, una venta, una comisión: lo que sea, tiene que ser concreto.",
     costs:
-      "Los costos. ¿En qué se va el dinero cada mes? Sumá lo que no podés evitar y lo que crece con cada cliente.",
+      "Los costos. ¿En qué se va el dinero cada mes? Suma lo que no puedes evitar y lo que crece con cada cliente.",
     competition:
       "La competencia. ¿Qué alternativas tiene hoy ese cliente para resolver lo mismo, aunque no sean tu competencia directa?",
     metrics:
-      "Las métricas. ¿Qué tenés que mirar para saber que esto funciona? Elegí una o dos, las que mirás todas las semanas.",
+      "Las métricas. ¿Qué tienes que mirar para saber que esto funciona? Elige una o dos, las que miras todas las semanas.",
     risks:
       "Los riesgos. ¿Qué puede salir mal? Lo que más te quita el sueño es lo que vale la pena escribir acá.",
   };
@@ -57,18 +58,30 @@ export class RehearsalCoachModel implements CoachModel {
    * The answer for one turn.
    *
    * When the agenda has an open dimension, the coach asks about it. When
-   * everything is filled, the coach says so and asks for the next idea.
+   * everything is filled, the coach works the next open step — and when there
+   * is none either, it pivots to starting the venture: the structuring is
+   * over, the accompaniment begins.
    */
   private answerFor(input: CoachRequest): string {
     const next = input.agenda[0] as NodeType | undefined;
 
-    if (!next) {
-      return `La idea "${input.title}" ya está completa: las diez dimensiones tienen respuesta validada. ¿Querés empezar otra idea?`;
+    if (next) {
+      return RehearsalCoachModel.QUESTIONS[next] ?? "";
     }
 
-    const question = RehearsalCoachModel.QUESTIONS[next] ?? "";
+    if (input.nextStep) {
+      // The person already answered about this step: repeating the question
+      // froze the conversation. The coach now works the step — the advice it
+      // gave when proposing it — and says how the step moves on.
+      if (stepAlreadyRaised(input)) {
+        const detail = input.nextStep.detail ? ` ${input.nextStep.detail}` : "";
+        return `Seguimos con "${input.nextStep.title}".${detail} Dame lo que tengas de eso y, cuando lo veas listo, márcalo como hecho para pasar al siguiente paso.`;
+      }
 
-    return question;
+      return `El paso que sigue es: "${input.nextStep.title}". ¿Qué necesitas para darlo esta semana?`;
+    }
+
+    return `La idea "${input.title}" ya está completa: las diez dimensiones tienen respuesta validada. Ahora, a arrancar: en «El arranque» puedes pedirme los primeros pasos y aceptar los que te sirvan; después los trabajamos de a uno.`;
   }
 }
 

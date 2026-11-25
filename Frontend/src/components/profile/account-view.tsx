@@ -57,23 +57,41 @@ export function AccountView() {
           </a>
         </Section>
 
-        {isDemo ? <DemoResetSection /> : null}
+        {isDemo ? (
+          <>
+            <Section
+              title="Cuenta demo"
+              description="Una sola cuenta para todas las personas que prueban el producto."
+            >
+              <p className="max-w-prose text-sm leading-relaxed text-stone">
+                Su nombre, correo y contraseña son fijos, y no se puede eliminar:
+                cualquier cambio dejaría la demo rota para la próxima persona. Si
+                algo quedó desordenado, reinicia la demo y vuelve al estado
+                inicial.
+              </p>
+            </Section>
 
-        <Section title="Perfil" description="Cómo te saluda el estudio.">
-          <NameForm current={session.user.name} onSaved={refetch} />
-        </Section>
+            <DemoResetSection />
+          </>
+        ) : (
+          <>
+            <Section title="Perfil" description="Cómo te saluda el estudio.">
+              <NameForm current={session.user.name} onSaved={refetch} />
+            </Section>
 
-        <Section title="Correo" description="El correo con el que entras.">
-          <EmailForm current={session.user.email} onSaved={refetch} />
-        </Section>
+            <Section title="Correo" description="El correo con el que entras.">
+              <EmailForm current={session.user.email} onSaved={refetch} />
+            </Section>
 
-        <Section title="Contraseña" description="Para cambiarla necesitas la actual. Cerraremos tus otras sesiones.">
-          <PasswordForm />
-        </Section>
+            <Section title="Contraseña" description="Para cambiarla necesitas la actual. Cerraremos tus otras sesiones.">
+              <PasswordForm />
+            </Section>
 
-        <Section title="Eliminar la cuenta" description="Borra tu cuenta y todas tus ideas. Te recomendamos exportar tus datos antes.">
-          <DeleteAccount />
-        </Section>
+            <Section title="Eliminar la cuenta" description="Borra tu cuenta y todas tus ideas. Te recomendamos exportar tus datos antes.">
+              <DeleteAccount />
+            </Section>
+          </>
+        )}
       </div>
     </div>
   );

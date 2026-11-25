@@ -235,9 +235,39 @@ export const ideaVersions = pgTable(
   ],
 );
 
+/** Whether an arranque step is still to be worked or already finished. */
+export const stepStatusEnum = pgEnum("step_status", ["open", "done"]);
+
+/**
+ * The steps of the arranque: what the person works on after the ten
+ * dimensions are validated.
+ *
+ * They live apart from the plan on purpose — the graph is closed once
+ * complete, and completing a step never touches the validated idea.
+ */
+export const arranqueSteps = pgTable(
+  "arranque_steps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ideaId: uuid("idea_id")
+      .notNull()
+      .references(() => ideas.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    detail: text("detail"),
+    status: stepStatusEnum("status").notNull().default("open"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("arranque_steps_idea_created_idx").on(table.ideaId, table.createdAt),
+  ],
+);
+
 /** Row shape of each table, useful for repositories and tests. */
 export type UserRow = typeof users.$inferSelect;
 export type IdeaRow = typeof ideas.$inferSelect;
 export type MessageRow = typeof messages.$inferSelect;
 export type NodeRow = typeof nodes.$inferSelect;
 export type IdeaVersionRow = typeof ideaVersions.$inferSelect;
+export type ArranqueStepRow = typeof arranqueSteps.$inferSelect;

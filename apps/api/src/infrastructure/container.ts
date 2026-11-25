@@ -1,10 +1,12 @@
 import { getDatabase } from "./db/client";
 import { DrizzleDemoBook } from "./db/demo-book";
+import { DrizzleArranqueStepRepository } from "./db/arranque-step-repository";
 import { DrizzleIdeaRepository } from "./db/idea-repository";
 import { DrizzleMessageRepository } from "./db/message-repository";
 import {
   createCoachModel,
   createExtractor,
+  createStepPlanner,
   resolveCoachProvider,
 } from "./ai";
 import { InMemoryUsageQuota } from "./ai/in-memory-usage-quota";
@@ -33,6 +35,16 @@ export function messageRepository(): DrizzleMessageRepository {
   }
 
   return messageRepositoryInstance;
+}
+
+let arranqueStepRepositoryInstance: DrizzleArranqueStepRepository | undefined;
+
+export function arranqueStepRepository(): DrizzleArranqueStepRepository {
+  if (!arranqueStepRepositoryInstance) {
+    arranqueStepRepositoryInstance = new DrizzleArranqueStepRepository();
+  }
+
+  return arranqueStepRepositoryInstance;
 }
 
 /**
@@ -65,6 +77,22 @@ export function extractor() {
   }
 
   return cachedExtractor;
+}
+
+let cachedStepPlanner: ReturnType<typeof createStepPlanner> | undefined;
+
+/**
+ * The step planner of the arranque.
+ *
+ * Same rule as the coach and the extractor: one provider decides for the whole
+ * process, and it is built once per process.
+ */
+export function stepPlanner() {
+  if (!cachedStepPlanner) {
+    cachedStepPlanner = createStepPlanner({ provider: resolveCoachProvider() });
+  }
+
+  return cachedStepPlanner;
 }
 
 let cachedQuota: InMemoryUsageQuota | undefined;

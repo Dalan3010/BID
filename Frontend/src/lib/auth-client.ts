@@ -49,6 +49,7 @@ export function authErrorMessage(
     TOKEN_EXPIRED: "El enlace caducó. Pide uno nuevo.",
     SESSION_EXPIRED: "Tu sesión caducó. Vuelve a entrar.",
     CREDENTIAL_ACCOUNT_NOT_FOUND: "Esta cuenta no tiene contraseña configurada.",
+    DEMO_ACCOUNT_READ_ONLY: "La cuenta demo es de solo lectura.",
   };
 
   if (known[code]) return known[code];

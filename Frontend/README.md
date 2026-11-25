@@ -139,7 +139,7 @@ Frontend/
 
 ## Tests
 
-`pnpm test` ejecuta 73 tests (sin navegador real ni red). En `src/lib`:
+`pnpm test` ejecuta 118 tests (sin navegador real ni red). En `src/lib`:
 
 - `api.test.ts` — cookie en cada request, nunca `ownerId`, mensajes de error de
   la API, `sendMessage` falla **antes** del stream, 429 de extracción como
